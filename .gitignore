@@ -1,0 +1,42 @@
+# SLURM logs
+slurm-*.out
+slurm-*.err
+
+# pipeline outputs (regenerated each run)
+dcs_analysis_*/
+merged_bam/
+primary_bams/
+bw/
+bw_mapq*/
+readstart_beds/
+*.minimap2.log
+*.dorado.log
+*.bamCoverage.log
+run.log
+
+# samtools / index sidecars
+*.fai
+*.bai
+*.mmi
+*.crai
+
+# OS junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# IDE
+.vscode/
+.idea/
