@@ -247,6 +247,50 @@ Rscript scripts/karyoplot_bedgraph.R \
 
 The script installs `karyoploteR` + `regioneR` on first run if they're not already there. Output is a stacked multi-track plot — one track per barcode, color-coded, sharing a y-axis (so heights are directly comparable), with the centromere/HOR highlighted on the chromosome ideogram.
 
+### Step 8 — distinct transcribed sites (optional, complementary view)
+
+The default pipeline keeps PCR duplicates because for amplicon data the duplicate count IS the abundance signal. But if you also want a **presence/absence** view — "which centromere positions were transcribed at all, regardless of how many times each one was amplified?" — step 8 gives you that.
+
+For each `barcodeNN.readstart.bed.gz` from step 5 it collapses to unique `(chr, start, strand)` triples. Same start on opposite strands counts as two sites (sense and antisense at one locus are biologically distinct).
+
+Why not `samtools markdup`? For amplicon long reads, the 5′ end is the primer-defined start, so every true molecule from one amplicon shares a coordinate. `markdup` would over-collapse them and report ~1 molecule per primer site. Sorting unique on `(chr, start, strand)` makes the same call honestly: this is a *site* map, not a *molecule count*.
+
+Run it after step 5:
+
+```bash
+./scripts/mark_transcribed_sites.sh -b dcs_analysis_*/readstart_beds -t 8
+```
+
+Writes `transcribed_sites/` next to your `dcs_analysis_*/`:
+
+```
+transcribed_sites/
+├── barcode01.sites.bed                 BED6 — one row per unique site
+├── barcode01.sites.bedgraph            chr/start/end/1 — drop into karyoplot
+├── ...
+└── transcribed_sites_summary.tsv       barcode | reads | sites | reads-per-site
+```
+
+The `reads-per-site` column in the summary is informative — it's the average PCR amplification depth per captured molecule. A value of 1.0 means no duplication; a value of 200 means heavy amplification of relatively few unique molecules.
+
+**Plot it using the same karyoplot script** (no code change needed). Point it at the `.sites.bedgraph` files instead of the `.startcount.bedgraph` files, and pass `NA` for the DCS TSV since these are presence values, not abundances:
+
+```bash
+Rscript scripts/karyoplot_bedgraph.R \
+    /path/to/hg38.chrom.sizes \
+    /path/to/centromere_horAll.bed \
+    /path/to/centromere_broad.bed \
+    plots/chr1_transcribed_sites \
+    chr1 auto NA \
+    dcs_analysis_*/transcribed_sites/barcode01.sites.bedgraph \
+    dcs_analysis_*/transcribed_sites/barcode02.sites.bedgraph \
+    dcs_analysis_*/transcribed_sites/barcode05.sites.bedgraph
+```
+
+Every bar in the resulting plot is height 1 — the plot answers *where* a region fires, not *how much*.
+
+**Interpretation caveat.** For amplicon data, "site present" means *both* "this region is transcribed" *and* "your primer can land here". Absence of sites is therefore suggestive of no transcription, not proof — your primer design also matters. Presence-of-sites is the clean signal.
+
 ---
 
 ## All the flags for `run_dcs_workflow.sh`
@@ -295,6 +339,10 @@ bam_pass/merged_bam/                      ← created in place by step 1; kept f
 ├── readstart_beds/                        per-read BED + collapsed bedgraph
 │   ├── barcode01.readstart.bed.gz
 │   └── barcode01.startcount.bedgraph
+├── transcribed_sites/                     step 8 (optional) — presence/absence map
+│   ├── barcode01.sites.bed
+│   ├── barcode01.sites.bedgraph
+│   └── transcribed_sites_summary.tsv
 ├── dcs_normalization_qc.png + .pdf        QC plot (before/after normalization)
 └── run.log                                full transcript of this run
 ```
@@ -303,64 +351,4 @@ bam_pass/merged_bam/                      ← created in place by step 1; kept f
 
 ## Repo layout
 
-```
-CenTraL/
-├── README.md                              you are here
-├── LICENSE                                MIT
-├── .gitignore                             keeps run outputs out of git
-├── environment.yml                        conda env spec for reproducibility
-├── run_dcs_workflow.sh                    ← ENTRY POINT — one command, does steps 1–6
-├── scripts/
-│   ├── barcode_merge_nanopore.sh          step 1 — merge per-barcode chunks
-│   ├── count_dcs_spikein.sh               step 2 — DCS spike-in count + scale factor
-│   ├── filter_primary_bams.sh             step 3 — primary-only (-F 2308) BAMs
-│   ├── make_normalized_bigwigs.sh         step 4 — normalized bigwigs
-│   ├── make_readstart_bed.sh              step 5 — 1 bp BED + bedgraph per barcode
-│   ├── plot_normalization_qc.py           step 6 — DCS QC bar plot
-│   ├── karyoplot_bedgraph.R               step 7 — chromosome karyoplot (manual)
-│   └── DCS_Lambda_3.6kb.fa                ONT DCS reference (auto-resolved by step 2)
-└── examples/
-    ├── demo_dcs_counts.tsv                example step 2 output
-    └── dcs_normalization_qc_DEMO.png      example step 6 output
-```
-
----
-
-## Design choices worth knowing
-
-**No MAPQ filtering.** Reads in pericentromeric regions multi-map across HOR copies and segmental duplications — that's real signal for centromere work, not noise. Filtering on MAPQ would throw away the data you actually care about.
-
-**No deduplication.** Every read in PCR amplicon data is a PCR product by definition. The duplicates ARE the amplification signal. Removing them would destroy the readout.
-
-**DCS-based normalization corrects for what it can.** DCS proxies for library prep + sequencing variation (everything that happens after DCS is added). It does **not** correct for PCR amplification efficiency differences (which happen before).
-
-**Idempotent.** Re-running any step skips work that's already done. Pass `-f` to force.
-
-**SLURM with no resource caps.** `#SBATCH --mem=0 --time=0` in every script header — the job uses the whole node and doesn't get killed early.
-
----
-
-## Citation — required
-
-If you use CenTraL in any published work, you **must** cite it.
-
-The companion manuscript is **in preparation**. The full citation (authors,
-journal, DOI) will be added to this section as soon as the paper is out —
-please re-check this README before submitting your manuscript.
-
-For now, link to the repository in your Methods:
-
-> https://github.com/santoshbiowarrior333/CenTraL
-
-shashisantosh2007@gmail.com
-path1327@ox.ac.uk
-
-
-## License
-
-MIT — see `LICENSE`. You're free to use, modify, and redistribute the code;
-the only firm condition is the citation requirement above.
-
----
-
-In active use for centromere RNA work. Issues and PRs welcome.
+``
