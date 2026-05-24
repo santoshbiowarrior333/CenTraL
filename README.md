@@ -338,12 +338,42 @@ CenTraL/
 
 ---
 
-## Citation / license
+## Citation — required
 
-MIT — see `LICENSE`. Use it however you like; no warranty.
+If you use CenTraL in any published work, you **must** cite it. The companion
+manuscript is in preparation — once published, please cite the paper itself.
+Until then, cite this repository (and we'll update this section with the paper
+DOI as soon as it's out).
 
-If you use CenTraL in a publication, a link back to this repo is appreciated but not required.
+**While the manuscript is in preparation, cite as:**
+
+> Shashi, S. K. & Pathak, S. (2026). _CenTraL: Centromeric Transcript
+> capturing and Long read sequencing — a per-barcode Nanopore cDNA amplicon
+> analysis pipeline._ Manuscript in preparation. Software available at
+> https://github.com/santoshbiowarrior333/CenTraL.
+
+**Once the paper is out, cite the published reference** (this section will be
+updated with the full citation, DOI, and journal). Please check this README
+before submitting your manuscript.
+
+GitHub's right-sidebar "Cite this repository" button (populated from
+`CITATION.cff`) gives you the same information as a copy-paste-ready BibTeX
+block.
+
+**Contact:**
+
+- Santosh Kumar Shashi — shashisantosh2007@gmail.com
+- Sumit Pathak — path1327@ox.ac.uk (University of Oxford)
+
+Please reach out before applying CenTraL to a project outside the centromere
+amplicon use case — we're happy to collaborate.
+
+
+## License
+
+MIT — see `LICENSE`. You're free to use, modify, and redistribute the code;
+the only firm condition is the citation requirement above.
 
 ---
 
-In active use for centromere RNA work — open an issue if anything is unclear or doesn't work the way you'd expect.
+In active use for centromere RNA work. Issues and PRs welcome.
