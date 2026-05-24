@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 330" role="img" aria-label="CenTraL animated banner: pipeline from cell to centromere transcripts to PCR amplicons to Nanopore sequencing to karyoplot output">
+  <title>CenTraL</title>
+  <desc>Animated pipeline diagram for CenTraL: cell with centromere, centromeric RNA, cDNA and PCR with primers, Nanopore flowcell with read passing through the pore, karyoplot output. Continuous loops: data flow dot left-to-right, read translocation through pore, gentle pulse on centromere.</desc>
+
+  <rect x="0" y="0" width="1200" height="330" fill="#ffffff"/>
+
+  <text x="40" y="62" font-family="Helvetica, Arial, sans-serif" font-size="44" font-weight="700" fill="#1e3a8a" letter-spacing="-0.5">CenTraL</text>
+  <text x="40" y="90" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#475569"><tspan font-weight="500" fill="#1e3a8a">Cen</tspan>tromeric <tspan font-weight="500" fill="#1e3a8a">Tra</tspan>nscript capturing and <tspan font-weight="500" fill="#1e3a8a">L</tspan>ong-read sequencing</text>
+
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M2 1L9 5L2 9" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrFwd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M2 1L9 5L2 9" fill="#1e3a8a" stroke="none"/>
+    </marker>
+    <marker id="arrRev" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M2 1L9 5L2 9" fill="#991b1b" stroke="none"/>
+    </marker>
+    <!-- clip mask for the read passing through the pore (stage 4) -->
+    <clipPath id="poreClip">
+      <rect x="625" y="180" width="160" height="80"/>
+    </clipPath>
+  </defs>
+
+  <!-- ============================================ -->
+  <!-- Stage 1: cell + chromosome with centromere -->
+  <!-- ============================================ -->
+  <g transform="translate(40, 140)">
+    <circle cx="70" cy="70" r="65" fill="#eff6ff" stroke="#1e3a8a" stroke-width="1.5"/>
+    <circle cx="70" cy="70" r="42" fill="#dbeafe" stroke="#1e3a8a" stroke-width="1" stroke-dasharray="2,2"/>
+    <g transform="translate(70,70) rotate(-25)">
+      <path d="M -16 -28 Q -20 -10 -16 0 Q -20 10 -16 28" fill="none" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+      <path d="M 0 -28 Q -4 -10 0 0 Q -4 10 0 28" fill="none" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+      <!-- centromere pulses gently -->
+      <ellipse cx="-8" cy="0" rx="14" ry="5" fill="#991b1b">
+        <animate attributeName="opacity" values="0.55;0.95;0.55" dur="2.4s" repeatCount="indefinite"/>
+      </ellipse>
+    </g>
+    <text x="70" y="160" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">Cell + centromere</text>
+    <text x="70" y="174" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#64748b">RPE1, hap-resolved</text>
+  </g>
+
+  <line x1="190" y1="210" x2="225" y2="210" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ============================================ -->
+  <!-- Stage 2: centromere transcription (RNA) -->
+  <!-- ============================================ -->
+  <g transform="translate(235, 140)">
+    <rect x="0" y="60" width="140" height="14" fill="#e2e8f0" stroke="#475569" stroke-width="1" rx="3"/>
+    <rect x="48" y="60" width="44" height="14" fill="#991b1b" opacity="0.75" rx="2"/>
+    <!-- transcript wavy line: animate its draw progress via stroke-dashoffset -->
+    <path d="M 50 60 Q 56 30 62 50 Q 68 20 74 42 Q 80 14 86 38 Q 92 22 95 32" fill="none" stroke="#166534" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="120" stroke-dashoffset="120">
+      <animate attributeName="stroke-dashoffset" values="120;0;0;120" keyTimes="0;0.5;0.85;1" dur="3.2s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 45 86 L 95 86" stroke="#166534" stroke-width="1" marker-end="url(#arr)" opacity="0.6"/>
+    <text x="70" y="160" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">Centromeric RNA</text>
+    <text x="70" y="174" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#64748b">alpha-satellite, HOR</text>
+  </g>
+
+  <line x1="385" y1="210" x2="420" y2="210" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ============================================ -->
+  <!-- Stage 3: cDNA + PCR amplicons with primers -->
+  <!-- ============================================ -->
+  <g transform="translate(430, 140)">
+    <line x1="10" y1="58" x2="130" y2="58" stroke="#1e3a8a" stroke-width="2"/>
+    <line x1="10" y1="72" x2="130" y2="72" stroke="#991b1b" stroke-width="2"/>
+    <line x1="12" y1="58" x2="42" y2="58" stroke="#1e3a8a" stroke-width="3.5" marker-end="url(#arrFwd)"/>
+    <line x1="128" y1="72" x2="98" y2="72" stroke="#991b1b" stroke-width="3.5" marker-end="url(#arrRev)"/>
+    <!-- amplification copies appear in sequence to suggest PCR cycles -->
+    <line x1="14" y1="86" x2="126" y2="86" stroke="#1e3a8a" stroke-width="1.8" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.55;0.55;0" keyTimes="0;0.15;0.4;0.85;1" dur="3.2s" repeatCount="indefinite"/>
+    </line>
+    <line x1="14" y1="98" x2="126" y2="98" stroke="#1e3a8a" stroke-width="1.8" opacity="0">
+      <animate attributeName="opacity" values="0;0;0;0.35;0.35;0" keyTimes="0;0.25;0.45;0.6;0.85;1" dur="3.2s" repeatCount="indefinite"/>
+    </line>
+    <line x1="14" y1="44" x2="126" y2="44" stroke="#1e3a8a" stroke-width="1.8" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.55;0.55;0" keyTimes="0;0.15;0.4;0.85;1" dur="3.2s" repeatCount="indefinite"/>
+    </line>
+    <line x1="14" y1="32" x2="126" y2="32" stroke="#1e3a8a" stroke-width="1.8" opacity="0">
+      <animate attributeName="opacity" values="0;0;0;0.35;0.35;0" keyTimes="0;0.25;0.45;0.6;0.85;1" dur="3.2s" repeatCount="indefinite"/>
+    </line>
+    <text x="70" y="160" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">cDNA + PCR</text>
+    <text x="70" y="174" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#64748b">forward + reverse primers</text>
+  </g>
+
+  <line x1="580" y1="210" x2="615" y2="210" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ============================================ -->
+  <!-- Stage 4: Nanopore flowcell + read through pore (animated) -->
+  <!-- ============================================ -->
+  <g transform="translate(625, 140)">
+    <rect x="10" y="40" width="140" height="80" rx="8" fill="#f1f5f9" stroke="#1e3a8a" stroke-width="1.5"/>
+    <line x1="10" y1="80" x2="150" y2="80" stroke="#475569" stroke-width="0.6" stroke-dasharray="3,3"/>
+    <ellipse cx="80" cy="80" rx="14" ry="7" fill="#cbd5e1" stroke="#1e3a8a" stroke-width="1.2"/>
+    <ellipse cx="80" cy="80" rx="6" ry="3" fill="#ffffff" stroke="#1e3a8a" stroke-width="0.8"/>
+    <!-- read squiggle clipped to flowcell, translated downward in a loop -->
+    <g clip-path="url(#poreClip)">
+      <g transform="translate(0,0)">
+        <path d="M 80 -10 Q 76 -4 80 2 Q 84 8 80 14 Q 76 18 80 20 Q 84 26 80 32 Q 76 40 80 48 Q 84 54 80 58 Q 76 64 80 70 Q 84 76 80 82 Q 76 88 80 94 Q 84 100 80 106 Q 76 112 80 118 Q 84 124 80 130 Q 76 136 80 142" fill="none" stroke="#166534" stroke-width="2" stroke-linecap="round"/>
+        <animateTransform attributeName="transform" type="translate" values="0,-40; 0,40" dur="2.4s" repeatCount="indefinite"/>
+      </g>
+    </g>
+    <!-- ionic current squiggle on the right side -->
+    <path d="M 110 100 L 116 100 L 116 94 L 122 94 L 122 104 L 128 104 L 128 96 L 134 96 L 134 102 L 142 102" fill="none" stroke="#6b21a8" stroke-width="1.2">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="1.2s" repeatCount="indefinite"/>
+    </path>
+    <text x="80" y="160" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">Nanopore sequencing</text>
+    <text x="80" y="174" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#64748b">native barcoding, MinKNOW</text>
+  </g>
+
+  <line x1="785" y1="210" x2="820" y2="210" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ============================================ -->
+  <!-- Stage 5: karyoplot output (chr bar + tracks) -->
+  <!-- ============================================ -->
+  <g transform="translate(830, 130)">
+    <line x1="10" y1="30" x2="180" y2="30" stroke="#e2e8f0" stroke-width="0.6"/>
+    <g stroke="#1e3a8a" stroke-width="1" opacity="0.7">
+      <line x1="40" y1="22" x2="40" y2="30"/>
+      <line x1="55" y1="22" x2="55" y2="30"/>
+      <line x1="78" y1="22" x2="78" y2="30"/>
+      <line x1="92" y1="22" x2="92" y2="30"/>
+      <line x1="110" y1="22" x2="110" y2="30"/>
+      <line x1="138" y1="22" x2="138" y2="30"/>
+    </g>
+    <line x1="10" y1="46" x2="180" y2="46" stroke="#e2e8f0" stroke-width="0.6"/>
+    <g stroke="#166534" stroke-width="1" opacity="0.7">
+      <line x1="48" y1="38" x2="48" y2="46"/>
+      <line x1="62" y1="38" x2="62" y2="46"/>
+      <line x1="84" y1="38" x2="84" y2="46"/>
+      <line x1="100" y1="38" x2="100" y2="46"/>
+      <line x1="120" y1="38" x2="120" y2="46"/>
+    </g>
+    <line x1="10" y1="74" x2="180" y2="74" stroke="#e2e8f0" stroke-width="0.6"/>
+    <g fill="#3b82f6" stroke="none">
+      <rect x="42" y="62" width="2" height="12"/>
+      <rect x="50" y="58" width="2" height="16"/>
+      <rect x="58" y="68" width="2" height="6"/>
+      <rect x="68" y="54" width="2" height="20"/>
+      <rect x="78" y="60" width="2" height="14"/>
+      <rect x="86" y="64" width="2" height="10"/>
+      <rect x="96" y="56" width="2" height="18"/>
+      <rect x="106" y="62" width="2" height="12"/>
+      <rect x="116" y="70" width="2" height="4"/>
+      <rect x="126" y="66" width="2" height="8"/>
+      <rect x="136" y="60" width="2" height="14"/>
+    </g>
+    <line x1="10" y1="100" x2="180" y2="100" stroke="#e2e8f0" stroke-width="0.6"/>
+    <g fill="#06d6a0" stroke="none">
+      <rect x="42" y="92" width="2" height="8"/>
+      <rect x="50" y="86" width="2" height="14"/>
+      <rect x="58" y="94" width="2" height="6"/>
+      <rect x="68" y="80" width="2" height="20"/>
+      <rect x="78" y="84" width="2" height="16"/>
+      <rect x="86" y="90" width="2" height="10"/>
+      <rect x="96" y="78" width="2" height="22"/>
+      <rect x="106" y="86" width="2" height="14"/>
+      <rect x="116" y="94" width="2" height="6"/>
+      <rect x="126" y="88" width="2" height="12"/>
+      <rect x="136" y="84" width="2" height="16"/>
+    </g>
+    <rect x="10" y="112" width="170" height="10" rx="4" fill="#e2e8f0" stroke="#475569" stroke-width="0.6"/>
+    <rect x="62" y="112" width="50" height="10" rx="2" fill="#991b1b" opacity="0.8"/>
+    <text x="95" y="160" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">Karyoplot + tracks</text>
+    <text x="95" y="174" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#64748b">primers, ASO, coverage</text>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- Flow dot: navy dot moves left-to-right along y=210 through the pipeline arrows -->
+  <!-- ============================================ -->
+  <circle r="4" fill="#1e3a8a" opacity="0.85">
+    <animateMotion path="M 180 210 L 1010 210" dur="5s" repeatCount="indefinite" rotate="auto"/>
+    <animate attributeName="opacity" values="0;0.85;0.85;0.85;0" keyTimes="0;0.08;0.5;0.92;1" dur="5s" repeatCount="indefinite"/>
+  </circle>
+
+</svg>
