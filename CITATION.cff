@@ -1,8 +1,9 @@
 cff-version: 1.2.0
 message: >
-  If you use CenTraL in published work, please cite it. The companion
-  manuscript is currently in preparation — until it's published, cite this
-  repository using the metadata below.
+  CenTraL is a research software pipeline. The companion manuscript is in
+  preparation. Once it is published, this file will be updated with a
+  preferred-citation block pointing to the paper (with DOI and journal).
+  Until then, please cite the repository.
 title: "CenTraL: Centromeric Transcript capturing and Long read sequencing — a per-barcode Nanopore cDNA amplicon analysis pipeline"
 abstract: >
   CenTraL is a one-command post-sequencing pipeline for per-barcode Nanopore
@@ -13,13 +14,12 @@ abstract: >
   centromere / HOR highlighting.
 type: software
 authors:
-  - family-names: "Shashi"
+  - email: "shashisantosh2007@gmail.com"
+    family-names: "Shashi"
     given-names: "Santosh Kumar"
-    email: "shashisantosh2007@gmail.com"
-  - family-names: "Pathak"
+  - email: "path1327@ox.ac.uk"
+    family-names: "Pathak"
     given-names: "Sumit"
-    email: "path1327@ox.ac.uk"
-    affiliation: "University of Oxford"
 repository-code: "https://github.com/santoshbiowarrior333/CenTraL"
 url: "https://github.com/santoshbiowarrior333/CenTraL"
 license: MIT
@@ -31,14 +31,4 @@ keywords:
   - "PCR amplicon"
   - "cDNA"
   - "long read sequencing"
-  - "RPE1"
   - "DCS spike-in"
-  - "bigwig"
-  - "karyoploteR"
-version: "1.0.0-prerelease"
-date-released: 2026-05-24
-notes: >
-  A manuscript describing this software is in preparation. Once published,
-  this CITATION.cff will be updated with a preferred-citation block pointing
-  to the paper (with DOI and journal). Please check the latest README before
-  citing.

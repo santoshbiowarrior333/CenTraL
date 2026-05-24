@@ -340,25 +340,15 @@ CenTraL/
 
 ## Citation — required
 
-If you use CenTraL in any published work, you **must** cite it. The companion
-manuscript is in preparation — once published, please cite the paper itself.
-Until then, cite this repository (and we'll update this section with the paper
-DOI as soon as it's out).
+If you use CenTraL in any published work, you **must** cite it.
 
-**While the manuscript is in preparation, cite as:**
+The companion manuscript is **in preparation**. The full citation (authors,
+journal, DOI) will be added to this section as soon as the paper is out —
+please re-check this README before submitting your manuscript.
 
-> Shashi, S. K. & Pathak, S. (2026). _CenTraL: Centromeric Transcript
-> capturing and Long read sequencing — a per-barcode Nanopore cDNA amplicon
-> analysis pipeline._ Manuscript in preparation. Software available at
-> https://github.com/santoshbiowarrior333/CenTraL.
+For now, link to the repository in your Methods:
 
-**Once the paper is out, cite the published reference** (this section will be
-updated with the full citation, DOI, and journal). Please check this README
-before submitting your manuscript.
-
-GitHub's right-sidebar "Cite this repository" button (populated from
-`CITATION.cff`) gives you the same information as a copy-paste-ready BibTeX
-block.
+> https://github.com/santoshbiowarrior333/CenTraL
 
 shashisantosh2007@gmail.com
 path1327@ox.ac.uk
