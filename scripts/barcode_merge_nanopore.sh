@@ -65,10 +65,14 @@ echo " force        : $FORCE"
 echo "------------------------------------------------------------------"
 echo
 
-# Collect the folders we want to process — barcode01..barcode99 and unclassified.
+# Collect the folders we want to process — barcodeN / barcodeNN / barcodeNNN
+# plus unclassified. Three globs cover the kits we'll realistically see.
 shopt -s nullglob
 folders=()
-for d in "$INPUT_DIR"/barcode[0-9][0-9] "$INPUT_DIR"/unclassified; do
+for d in "$INPUT_DIR"/barcode[0-9] \
+         "$INPUT_DIR"/barcode[0-9][0-9] \
+         "$INPUT_DIR"/barcode[0-9][0-9][0-9] \
+         "$INPUT_DIR"/unclassified; do
     [[ -d "$d" ]] && folders+=("$d")
 done
 shopt -u nullglob
@@ -122,6 +126,21 @@ for d in "${folders[@]}"; do
     echo ">> $name"
     echo "   merging ${#bams[@]} bam(s)  -->  $out_bam"
 
+    # Cheap header-level sanity check on each chunk before we bother merging —
+    # a single truncated BAM in the pile will otherwise blow up mid-sort and
+    # leave you guessing which file is bad.
+    bad=0
+    for chunk in "${bams[@]}"; do
+        if ! samtools quickcheck -q "$chunk"; then
+            echo "   !! quickcheck failed: $chunk" >&2
+            bad=$((bad + 1))
+        fi
+    done
+    if [[ "$bad" -ne 0 ]]; then
+        echo "   !! $bad bad chunk(s) for $name — skipping" >&2
+        fail=$((fail + 1)); echo; continue
+    fi
+
     if ! samtools merge -@ "$THREADS" -u -f -O bam - "${bams[@]}" \
             | samtools sort -@ "$THREADS" -o "$out_bam" - ; then
         echo "   !! merge|sort FAILED for $name" >&2
@@ -160,4 +179,5 @@ echo " output dir   : $OUTPUT_DIR"
 echo " finished     : $(date '+%Y-%m-%d %H:%M:%S')"
 echo "=================================================================="
 
-[[ "$fail" -ne 0 ]] && exit 1 || exit 0
+[[ "$fail" -ne 0 ]] && exit 1
+exit 0

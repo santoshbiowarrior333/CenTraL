@@ -62,13 +62,37 @@ def main():
     if not rows:
         sys.exit("No data rows in TSV.")
 
+    # Pull the columns we need. If any of them are missing/garbled in the TSV
+    # we bail with a readable message instead of a noisy Python traceback.
+    required = ("barcode", "target_mapped", "dcs_mapped", "scale_factor")
+    missing = [c for c in required if c not in rows[0]]
+    if missing:
+        sys.exit(f"TSV is missing column(s): {', '.join(missing)} — got {list(rows[0])}")
+
     barcodes = [r["barcode"] for r in rows]
-    target_mapped = np.array([int(r["target_mapped"]) for r in rows], dtype=float)
-    dcs_mapped = np.array([int(r["dcs_mapped"]) for r in rows], dtype=float)
-    scale = np.array(
-        [float(r["scale_factor"]) if r["scale_factor"] != "NA" else np.nan
-         for r in rows]
-    )
+
+    def _to_int(col):
+        out = []
+        for r in rows:
+            v = r[col]
+            try:
+                out.append(int(v))
+            except ValueError:
+                sys.exit(f"Bad value in column '{col}' for barcode {r['barcode']}: {v!r}")
+        return np.array(out, dtype=float)
+
+    def _to_scale(r):
+        v = r["scale_factor"]
+        if v == "NA" or v == "":
+            return np.nan
+        try:
+            return float(v)
+        except ValueError:
+            sys.exit(f"Bad scale_factor for barcode {r['barcode']}: {v!r}")
+
+    target_mapped = _to_int("target_mapped")
+    dcs_mapped = _to_int("dcs_mapped")
+    scale = np.array([_to_scale(r) for r in rows])
     normalized = target_mapped * scale
 
     # Console summary so the user gets numbers as well as a picture

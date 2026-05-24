@@ -83,7 +83,11 @@ echo "------------------------------------------------------------------"
 echo
 
 shopt -s nullglob
-candidates=("$BAM_DIR"/barcode[0-9][0-9].bam)
+candidates=(
+    "$BAM_DIR"/barcode[0-9].bam
+    "$BAM_DIR"/barcode[0-9][0-9].bam
+    "$BAM_DIR"/barcode[0-9][0-9][0-9].bam
+)
 [[ "$INCLUDE_UNCLASSIFIED" -eq 1 ]] && candidates+=("$BAM_DIR"/unclassified.bam)
 shopt -u nullglob
 bams=()

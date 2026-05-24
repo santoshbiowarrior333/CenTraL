@@ -126,8 +126,13 @@ echo "------------------------------------------------------------------"
 echo
 
 # Find barcode BAMs (and unclassified) in the directory.
+# Three width-globs cover 1-3 digit barcode names (barcode1, barcode01, barcode123).
 shopt -s nullglob
-candidates=("$BAM_DIR"/barcode[0-9][0-9].bam)
+candidates=(
+    "$BAM_DIR"/barcode[0-9].bam
+    "$BAM_DIR"/barcode[0-9][0-9].bam
+    "$BAM_DIR"/barcode[0-9][0-9][0-9].bam
+)
 [[ "$INCLUDE_UNCLASSIFIED" -eq 1 ]] && candidates+=("$BAM_DIR"/unclassified.bam)
 shopt -u nullglob
 

@@ -77,7 +77,11 @@ echo "------------------------------------------------------------------"
 echo
 
 shopt -s nullglob
-candidates=("$BAM_DIR"/barcode[0-9][0-9].bam)
+candidates=(
+    "$BAM_DIR"/barcode[0-9].bam
+    "$BAM_DIR"/barcode[0-9][0-9].bam
+    "$BAM_DIR"/barcode[0-9][0-9][0-9].bam
+)
 [[ "$INCLUDE_UNCLASSIFIED" -eq 1 ]] && candidates+=("$BAM_DIR"/unclassified.bam)
 shopt -u nullglob
 bams=()
@@ -106,6 +110,10 @@ for b in "${bams[@]}"; do
 
     step_start=$SECONDS
     echo ">> $name"
+    if ! samtools quickcheck -q "$b"; then
+        echo "   !! quickcheck failed on input $b — skipping" >&2
+        fail=$((fail + 1)); echo; continue
+    fi
     in_reads=$(samtools view -@ "$THREADS" -c "$b")
     echo "   input reads   : $in_reads"
     echo -n "   filtering -F 2308 -> $out..."
