@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="banner.svg" alt="CenTraL pipeline: cell, centromeric RNA, cDNA + PCR, Nanopore sequencing, karyoplot output" width="100%">
+</p>
+
 # CenTraL
 
 _**Cen**tromeric **Tra**nscript capturing and **L**ong read sequencing._
