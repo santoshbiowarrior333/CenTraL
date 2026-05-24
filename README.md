@@ -80,6 +80,25 @@ module load samtools dorado deeptools python R
 pip install --user matplotlib numpy      # only if your Python doesn't have them
 ```
 
+**BMRC cluster (Oxford) shortcut**
+
+If you are on the BMRC cluster, just source the bundled loader at the top of every interactive session or SLURM script:
+
+```bash
+source scripts/load_bmrc_modules.sh
+```
+
+That runs the four `module load` calls that work on BMRC as of 2026:
+
+```bash
+module load SAMtools
+module load deepTools
+module load dorado
+module load R-bundle-Bioconductor/3.18-foss-2023a-R-4.3.2
+```
+
+For any other cluster, copy `scripts/load_bmrc_modules.sh` and edit the module names to match what `module avail` shows on your system. CenTraL scripts themselves do not call `module load`; they only check the tools are on PATH and exit with a clear message if not.
+
 **Option D — mix and match**
 
 E.g. conda env for everything Python/R + `module load dorado` for the aligner. Works fine.
@@ -247,6 +266,44 @@ Rscript scripts/karyoplot_bedgraph.R \
 
 The script installs `karyoploteR` + `regioneR` on first run if they're not already there. Output is a stacked multi-track plot — one track per barcode, color-coded, sharing a y-axis (so heights are directly comparable), with the centromere/HOR highlighted on the chromosome ideogram.
 
+**Optional flags (any of them, any order):**
+
+- `--primer-fwd FILE` / `--primer-rev FILE` — BED files of primer binding sites. Drawn as short, semi-transparent vertical ticks at the top of the stack (navy for forward, dark red for reverse). Independent of the y-axis, so they read as position markers rather than coverage bars.
+- `--aso-plus FILE` / `--aso-minus FILE` — same idea, for ASO probe sites (dark green / dark purple).
+- `--primer-fwd-name "..."` (and `-rev-name`, `-aso-plus-name`, `-aso-minus-name`) — override the default row labels (`primer-fwd`, etc.) with whatever you want shown on the plot.
+- `--names "Sample A|Sample B|..."` — pipe-separated display names for the bedgraph tracks, positional. Blank slots fall back to the filename.
+- Inline naming, alternative to `--names`: append `||Display name` to any bedgraph or overlay path. Wrap the whole arg in double quotes so the shell doesn't choke on `||` or parens. Example: `"path/barcode01.startcount.bedgraph||Sample A (rep 1)"`.
+- `--title "..."` — replaces the default heading (which shows `chr1:start-end ... ymax=...`) with whatever string you want.
+
+**Run for every chromosome in one go** (loop over the chrom.sizes file, six barcodes per call, custom names per track and a per-chr title):
+
+```bash
+DCS=$(ls -d ../dcs_analysis_*/ | head -1)
+for chr in chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX; do
+    Rscript karyoplot_bedgraph.R \
+        ../data_for_plots/rpe1_chrom.sizes \
+        ../data_for_plots/centromere_horAll.bed \
+        NA \
+        "${chr}_b01-06" "$chr" auto \
+        "${DCS}dcs_counts.tsv" \
+        "${DCS}readstart_beds/barcode01.startcount.bedgraph||chr17_forward(+RT)" \
+        "${DCS}readstart_beds/barcode02.startcount.bedgraph||chr17_reverse(+RT)" \
+        "${DCS}readstart_beds/barcode03.startcount.bedgraph||GUSB(+RT)" \
+        "${DCS}readstart_beds/barcode04.startcount.bedgraph||Chr17_forward(+RT)+ASO treated" \
+        "${DCS}readstart_beds/barcode05.startcount.bedgraph||Chr17_reverse(+RT)+ASO treated" \
+        "${DCS}readstart_beds/barcode06.startcount.bedgraph||GUSB(+RT)+ASO treated" \
+        --primer-fwd  ../data_for_plots/forward_starts.bed \
+        --primer-rev  ../data_for_plots/reverse_starts.bed \
+        --aso-plus    ../data_for_plots/aso2_le3mm_plus.bed \
+        --aso-minus   ../data_for_plots/aso2_le3mm_minus.bed \
+        --title "Aso treatment effect on whole chromosome centromere transcript($chr)"
+done
+```
+
+Add the hap-2 chromosome names (`chr1_2 chr2_2 ...`) to the `for chr in ...` list if your reference is haplotype-resolved. To loop over every chromosome in the chrom.sizes file without typing the list, replace `for chr in chr1 ...; do` with `while read -r chr _; do` and append `done < ../data_for_plots/rpe1_chrom.sizes` at the end.
+
+For other barcode groups (b07-12, b13-18, or whatever), swap the six `barcode0N` paths and the `_b01-06` suffix in the output prefix.
+
 ### Step 8 — distinct transcribed sites (optional, complementary view)
 
 The default pipeline keeps PCR duplicates because for amplicon data the duplicate count IS the abundance signal. But if you also want a **presence/absence** view — "which centromere positions were transcribed at all, regardless of how many times each one was amplified?" — step 8 gives you that.
@@ -273,7 +330,7 @@ transcribed_sites/
 
 The `reads-per-site` column in the summary is informative — it's the average PCR amplification depth per captured molecule. A value of 1.0 means no duplication; a value of 200 means heavy amplification of relatively few unique molecules.
 
-**Plot it using the same karyoplot script** (no code change needed). Point it at the `.sites.bedgraph` files instead of the `.startcount.bedgraph` files, and pass `NA` for the DCS TSV since these are presence values, not abundances:
+**Plot it using `karyoplot_bedgraph.R`** — point it at the `.sites.bedgraph` files instead of the `.startcount.bedgraph` files, and pass `NA` for the DCS TSV since these are presence values (height 1), not abundances:
 
 ```bash
 Rscript scripts/karyoplot_bedgraph.R \
@@ -283,11 +340,10 @@ Rscript scripts/karyoplot_bedgraph.R \
     plots/chr1_transcribed_sites \
     chr1 auto NA \
     dcs_analysis_*/transcribed_sites/barcode01.sites.bedgraph \
-    dcs_analysis_*/transcribed_sites/barcode02.sites.bedgraph \
-    dcs_analysis_*/transcribed_sites/barcode05.sites.bedgraph
+    dcs_analysis_*/transcribed_sites/barcode02.sites.bedgraph
 ```
 
-Every bar in the resulting plot is height 1 — the plot answers *where* a region fires, not *how much*.
+Every bar in the resulting plot is height 1 — answers *where* a region fires, not *how much*.
 
 **Interpretation caveat.** For amplicon data, "site present" means *both* "this region is transcribed" *and* "your primer can land here". Absence of sites is therefore suggestive of no transcription, not proof — your primer design also matters. Presence-of-sites is the clean signal.
 
@@ -351,4 +407,65 @@ bam_pass/merged_bam/                      ← created in place by step 1; kept f
 
 ## Repo layout
 
-``
+```
+CenTraL/
+├── README.md                              you are here
+├── LICENSE                                MIT
+├── .gitignore                             keeps run outputs out of git
+├── environment.yml                        conda env spec for reproducibility
+├── run_dcs_workflow.sh                    ← ENTRY POINT — one command, does steps 1–6
+├── scripts/
+│   ├── barcode_merge_nanopore.sh          step 1 — merge per-barcode chunks
+│   ├── count_dcs_spikein.sh               step 2 — DCS spike-in count + scale factor
+│   ├── filter_primary_bams.sh             step 3 — primary-only (-F 2308) BAMs
+│   ├── make_normalized_bigwigs.sh         step 4 — normalized bigwigs
+│   ├── make_readstart_bed.sh              step 5 — 1 bp BED + bedgraph per barcode
+│   ├── plot_normalization_qc.py           step 6 — DCS QC bar plot
+│   ├── karyoplot_bedgraph.R               step 7 — chromosome karyoplot (manual)
+│   ├── mark_transcribed_sites.sh          step 8 — distinct transcribed sites (manual)
+│   └── DCS_Lambda_3.6kb.fa                ONT DCS reference (auto-resolved by step 2)
+└── examples/
+    ├── demo_dcs_counts.tsv                example step 2 output
+    └── dcs_normalization_qc_DEMO.png      example step 6 output
+```
+
+---
+
+## Design choices worth knowing
+
+**No MAPQ filtering.** Reads in pericentromeric regions multi-map across HOR copies and segmental duplications — that's real signal for centromere work, not noise. Filtering on MAPQ would throw away the data you actually care about.
+
+**No deduplication in the main pipeline.** Every read in PCR amplicon data is a PCR product by definition — duplicates ARE the amplification signal. Steps 1–7 keep them all. If you want the *complementary* presence/absence view (which centromere positions fire at all, irrespective of how many times each one was amplified), step 8 gives you that without using `samtools markdup`, which over-collapses amplicon data by design.
+
+**DCS-based normalization corrects for what it can.** DCS proxies for library prep + sequencing variation (everything that happens after DCS is added). It does **not** correct for PCR amplification efficiency differences (which happen before).
+
+**Idempotent.** Re-running any step skips work that's already done. Pass `-f` to force.
+
+**SLURM with no resource caps.** `#SBATCH --mem=0 --time=0` in every script header — the job uses the whole node and doesn't get killed early.
+
+---
+
+## Citation — required
+
+If you use CenTraL in any published work, you **must** cite it.
+
+The companion manuscript is **in preparation**. The full citation (authors,
+journal, DOI) will be added to this section as soon as the paper is out —
+please re-check this README before submitting your manuscript.
+
+For now, link to the repository in your Methods:
+
+> https://github.com/santoshbiowarrior333/CenTraL
+
+shashisantosh2007@gmail.com
+path1327@ox.ac.uk
+
+
+## License
+
+MIT — see `LICENSE`. You're free to use, modify, and redistribute the code;
+the only firm condition is the citation requirement above.
+
+---
+
+In active use for centromere RNA work. Issues and PRs welcome.
