@@ -360,13 +360,8 @@ GitHub's right-sidebar "Cite this repository" button (populated from
 `CITATION.cff`) gives you the same information as a copy-paste-ready BibTeX
 block.
 
-**Contact:**
-
-- Santosh Kumar Shashi — shashisantosh2007@gmail.com
-- Sumit Pathak — path1327@ox.ac.uk (University of Oxford)
-
-Please reach out before applying CenTraL to a project outside the centromere
-amplicon use case — we're happy to collaborate.
+shashisantosh2007@gmail.com
+path1327@ox.ac.uk
 
 
 ## License
