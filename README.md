@@ -2,6 +2,8 @@
 
 _**Cen**tromeric **Tra**nscript capturing and **L**ong read sequencing._
 
+**Status:** v1.0 alpha — in active use, API may change before the paper is published.
+
 A small post-sequencing pipeline for **per-barcode Nanopore cDNA amplicon data** from centromeric regions. Written for our centromere RNA work in RPE1 cells — native-barcoded libraries on a MinION/PromethION with live basecalling and alignment in MinKNOW.
 
 After the run, you have a `bam_pass/` folder full of chunked per-barcode BAMs. CenTraL turns that into:
