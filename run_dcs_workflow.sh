@@ -60,7 +60,16 @@ shift $((OPTIND - 1))
 
 [[ -z "$THREADS" ]] && THREADS="${SLURM_CPUS_PER_TASK:-4}"
 
-BAM_PASS_DIR="$(cd "$BAM_PASS_DIR" && pwd)"
+# IMPROVED: Validate numeric inputs
+for var in THREADS BIN_SIZE; do
+    val="${!var}"
+    if ! [[ "$val" =~ ^[0-9]+$ ]] || [[ "$val" -le 0 ]]; then
+        echo "Error: $var must be a positive integer, got: $val" >&2
+        exit 1
+    fi
+done
+
+BAM_PASS_DIR="$(cd "$BAM_PASS_DIR" && pwd)" || { echo "Error: BAM_PASS_DIR does not exist: $BAM_PASS_DIR" >&2; exit 1; }
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 SUBSCRIPTS="$SCRIPT_DIR/scripts"
 DCS_REF="$SUBSCRIPTS/DCS_Lambda_3.6kb.fa"
@@ -83,6 +92,18 @@ done
 if ! command -v dorado >/dev/null 2>&1 && ! command -v minimap2 >/dev/null 2>&1; then
     missing+=("dorado-or-minimap2")
 fi
+
+# IMPROVED: Check for R and required R packages (needed for optional step 7)
+if command -v Rscript >/dev/null 2>&1; then
+    for rpkg in karyoploteR regioneR; do
+        if ! Rscript -e "suppressMessages(library($rpkg))" >/dev/null 2>&1; then
+            missing+=("R:$rpkg")
+        fi
+    done
+else
+    missing+=("R")
+fi
+
 # Make sure all the sub-scripts are where we expect them
 for s in barcode_merge_nanopore.sh count_dcs_spikein.sh \
          filter_primary_bams.sh make_normalized_bigwigs.sh \

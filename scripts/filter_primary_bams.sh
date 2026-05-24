@@ -52,7 +52,14 @@ shift $((OPTIND - 1))
 [[ $# -gt 0 && -d "$1" ]] && BAM_DIR="$1"
 
 [[ -z "$THREADS" ]] && THREADS="${SLURM_CPUS_PER_TASK:-4}"
-BAM_DIR="$(cd "$BAM_DIR" && pwd)"
+
+# Validate numeric thread value
+if ! [[ "$THREADS" =~ ^[0-9]+$ ]] || [[ "$THREADS" -le 0 ]]; then
+    echo "Error: THREADS must be a positive integer, got: $THREADS" >&2
+    exit 1
+fi
+
+BAM_DIR="$(cd "$BAM_DIR" && pwd)" || { echo "Error: BAM_DIR does not exist: $BAM_DIR" >&2; exit 1; }
 [[ -z "$OUT_DIR" ]] && OUT_DIR="$(dirname "$BAM_DIR")/primary_bams"
 mkdir -p "$OUT_DIR"
 
@@ -76,10 +83,11 @@ echo " unclassified : $([[ "$INCLUDE_UNCLASSIFIED" -eq 1 ]] && echo "included" |
 echo "------------------------------------------------------------------"
 echo
 
-shopt -s nullglob
-candidates=("$BAM_DIR"/barcode[0-9][0-9].bam)
+# IMPROVED: Flexible barcode pattern matching (supports any number of digits)
+shopt -s nullglob extglob
+candidates=("$BAM_DIR"/barcode+([0-9]).bam)
 [[ "$INCLUDE_UNCLASSIFIED" -eq 1 ]] && candidates+=("$BAM_DIR"/unclassified.bam)
-shopt -u nullglob
+shopt -u nullglob extglob
 bams=()
 for b in "${candidates[@]}"; do [[ -f "$b" ]] && bams+=("$b"); done
 
@@ -92,7 +100,9 @@ echo "Found ${#bams[@]} BAM(s) to filter."
 echo
 
 job_start=$SECONDS
-done_count=0; skip_count=0; fail=0
+done_count=0
+skip_count=0
+fail=0
 
 for b in "${bams[@]}"; do
     name="$(basename "$b" .bam)"
@@ -101,7 +111,9 @@ for b in "${bams[@]}"; do
 
     if [[ -s "$out" && -s "$bai" && "$FORCE" -ne 1 ]]; then
         echo ">> $name: already filtered ($(du -h "$out" | cut -f1)) — skipping (use -f to overwrite)"
-        skip_count=$((skip_count + 1)); echo; continue
+        skip_count=$((skip_count + 1))
+        echo
+        continue
     fi
 
     step_start=$SECONDS
@@ -111,17 +123,28 @@ for b in "${bams[@]}"; do
     echo -n "   filtering -F 2308 -> $out..."
 
     if ! samtools view -@ "$THREADS" -b -F 2308 -o "$out" "$b" 2>/dev/null; then
-        echo " FAILED"; fail=$((fail + 1)); echo; continue
+        echo " FAILED"
+        fail=$((fail + 1))
+        echo
+        continue
     fi
     if ! samtools index -@ "$THREADS" "$out" 2>/dev/null; then
-        echo " indexed FAILED"; fail=$((fail + 1)); echo; continue
+        echo " indexed FAILED"
+        fail=$((fail + 1))
+        echo
+        continue
     fi
 
     out_reads=$(samtools view -@ "$THREADS" -c "$out")
     dropped=$((in_reads - out_reads))
     elapsed=$((SECONDS - step_start))
     size=$(du -h "$out" | cut -f1)
-    pct=$(awk -v d="$dropped" -v t="$in_reads" 'BEGIN{ if(t>0) printf "%.2f", 100*d/t; else print "0"}')
+    # IMPROVED: Safer arithmetic with validation
+    if [[ $in_reads -gt 0 ]]; then
+        pct=$(awk -v d="$dropped" -v t="$in_reads" 'BEGIN{ printf "%.2f", 100*d/t}')
+    else
+        pct="0"
+    fi
     printf " done\n   kept %s reads, dropped %s (%s%%), %s, %dm %ds\n\n" \
         "$out_reads" "$dropped" "$pct" "$size" $((elapsed/60)) $((elapsed%60))
     done_count=$((done_count + 1))

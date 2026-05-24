@@ -33,7 +33,7 @@ def read_tsv(path):
     rows = []
     with open(path) as f:
         header = f.readline().rstrip("\n").split("\t")
-        for line in f:
+        for line_no, line in enumerate(f, start=2):
             parts = line.rstrip("\n").split("\t")
             if not parts or not parts[0]:
                 continue
@@ -58,29 +58,42 @@ def main():
 
     out_prefix = Path(args.out) if args.out else tsv.parent / "dcs_normalization_qc"
 
-    rows = read_tsv(tsv)
+    try:
+        rows = read_tsv(tsv)
+    except Exception as e:
+        sys.exit(f"Error reading TSV: {e}")
+
     if not rows:
         sys.exit("No data rows in TSV.")
 
     barcodes = [r["barcode"] for r in rows]
-    target_mapped = np.array([int(r["target_mapped"]) for r in rows], dtype=float)
-    dcs_mapped = np.array([int(r["dcs_mapped"]) for r in rows], dtype=float)
-    scale = np.array(
-        [float(r["scale_factor"]) if r["scale_factor"] != "NA" else np.nan
-         for r in rows]
-    )
+    
+    # IMPROVED: Add error handling for numeric conversions
+    try:
+        target_mapped = np.array([int(r["target_mapped"]) for r in rows], dtype=float)
+        dcs_mapped = np.array([int(r["dcs_mapped"]) for r in rows], dtype=float)
+        scale = np.array(
+            [float(r["scale_factor"]) if r["scale_factor"] != "NA" else np.nan
+             for r in rows]
+        )
+    except (ValueError, KeyError) as e:
+        sys.exit(f"Error parsing numeric columns: {e}")
+    
     normalized = target_mapped * scale
 
     # Console summary so the user gets numbers as well as a picture
     print(f"Read {len(barcodes)} barcode(s) from {tsv}")
-    print(f"  raw target_mapped — min: {int(target_mapped.min()):,}   "
-          f"max: {int(target_mapped.max()):,}   "
-          f"CV: {target_mapped.std()/target_mapped.mean():.2f}")
-    finite_norm = normalized[np.isfinite(normalized)]
-    if finite_norm.size:
-        print(f"  normalized        — min: {int(finite_norm.min()):,}   "
-              f"max: {int(finite_norm.max()):,}   "
-              f"CV: {finite_norm.std()/finite_norm.mean():.2f}")
+    try:
+        print(f"  raw target_mapped — min: {int(target_mapped.min()):,}   "
+              f"max: {int(target_mapped.max()):,}   "
+              f"CV: {target_mapped.std()/target_mapped.mean():.2f}")
+        finite_norm = normalized[np.isfinite(normalized)]
+        if finite_norm.size:
+            print(f"  normalized        — min: {int(finite_norm.min()):,}   "
+                  f"max: {int(finite_norm.max()):,}   "
+                  f"CV: {finite_norm.std()/finite_norm.mean():.2f}")
+    except Exception as e:
+        print(f"  Warning: Could not compute statistics: {e}", file=sys.stderr)
 
     # Plot — two panels, shared x axis
     width_per_bar = 0.6
@@ -121,12 +134,16 @@ def main():
                         ha="center", va="bottom", fontsize=7)
 
     plt.tight_layout()
-    png = out_prefix.with_suffix(".png")
-    pdf = out_prefix.with_suffix(".pdf")
-    plt.savefig(png, dpi=150)
-    plt.savefig(pdf)
-    print(f"\nWrote: {png}")
-    print(f"Wrote: {pdf}")
+    
+    try:
+        png = out_prefix.with_suffix(".png")
+        pdf = out_prefix.with_suffix(".pdf")
+        plt.savefig(png, dpi=150)
+        plt.savefig(pdf)
+        print(f"\nWrote: {png}")
+        print(f"Wrote: {pdf}")
+    except Exception as e:
+        sys.exit(f"Error writing output files: {e}")
 
 
 if __name__ == "__main__":

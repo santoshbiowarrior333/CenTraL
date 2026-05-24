@@ -41,7 +41,13 @@ done
 shift $((OPTIND - 1))
 [[ $# -gt 0 && -d "$1" ]] && INPUT_DIR="$1"
 
-INPUT_DIR="$(cd "$INPUT_DIR" && pwd)"
+# Validate numeric thread value
+if ! [[ "$THREADS" =~ ^[0-9]+$ ]] || [[ "$THREADS" -le 0 ]]; then
+    echo "Error: THREADS must be a positive integer, got: $THREADS" >&2
+    exit 1
+fi
+
+INPUT_DIR="$(cd "$INPUT_DIR" && pwd)" || { echo "Error: INPUT_DIR does not exist: $INPUT_DIR" >&2; exit 1; }
 [[ -z "$OUTPUT_DIR" ]] && OUTPUT_DIR="$INPUT_DIR/merged_bam"
 mkdir -p "$OUTPUT_DIR"
 
@@ -65,10 +71,11 @@ echo " force        : $FORCE"
 echo "------------------------------------------------------------------"
 echo
 
-# Collect the folders we want to process — barcode01..barcode99 and unclassified.
+# Collect the folders we want to process — barcode01..barcodeNNN and unclassified.
+# IMPROVED: Now matches barcodeN+ (any number of digits), not just NN
 shopt -s nullglob
 folders=()
-for d in "$INPUT_DIR"/barcode[0-9][0-9] "$INPUT_DIR"/unclassified; do
+for d in "$INPUT_DIR"/barcode+([0-9]) "$INPUT_DIR"/unclassified; do
     [[ -d "$d" ]] && folders+=("$d")
 done
 shopt -u nullglob
@@ -111,6 +118,22 @@ for d in "${folders[@]}"; do
         continue
     fi
 
+    # IMPROVED: Check BAM file integrity before merging
+    echo ">> $name: checking BAM integrity..."
+    bam_corrupt=0
+    for bam_file in "${bams[@]}"; do
+        if ! samtools quickcheck -q "$bam_file" 2>/dev/null; then
+            echo "   WARNING: Corrupted or invalid BAM: $bam_file" >&2
+            bam_corrupt=1
+        fi
+    done
+    if [[ $bam_corrupt -eq 1 ]]; then
+        echo "   !! Some BAM files are corrupted — skipping $name" >&2
+        fail=$((fail + 1))
+        echo
+        continue
+    fi
+
     if [[ -s "$out_bam" && -s "$out_bai" && "$FORCE" -ne 1 ]]; then
         echo ">> $name: already merged ($(du -h "$out_bam" | cut -f1)), use -f to overwrite — skipping"
         skip_count=$((skip_count + 1))
@@ -122,16 +145,23 @@ for d in "${folders[@]}"; do
     echo ">> $name"
     echo "   merging ${#bams[@]} bam(s)  -->  $out_bam"
 
-    if ! samtools merge -@ "$THREADS" -u -f -O bam - "${bams[@]}" \
-            | samtools sort -@ "$THREADS" -o "$out_bam" - ; then
+    # IMPROVED: Better error message with actual command context
+    if ! samtools merge -@ "$THREADS" -u -f -O bam - "${bams[@]}" 2>/tmp/merge_err.$$.log | \
+            samtools sort -@ "$THREADS" -o "$out_bam" - 2>>/tmp/merge_err.$$.log; then
         echo "   !! merge|sort FAILED for $name" >&2
+        if [[ -s /tmp/merge_err.$$.log ]]; then
+            echo "   Error details:" >&2
+            head -n 5 /tmp/merge_err.$$.log | sed 's/^/   /' >&2
+            rm -f /tmp/merge_err.$$.log
+        fi
         fail=$((fail + 1))
         echo
         continue
     fi
+    rm -f /tmp/merge_err.$$.log
 
     echo "   indexing..."
-    if ! samtools index -@ "$THREADS" "$out_bam"; then
+    if ! samtools index -@ "$THREADS" "$out_bam" 2>/dev/null; then
         echo "   !! index FAILED for $name" >&2
         fail=$((fail + 1))
         echo

@@ -56,7 +56,17 @@ shift $((OPTIND - 1))
 [[ $# -gt 0 && -d "$1" ]] && BAM_DIR="$1"
 
 [[ -z "$THREADS" ]] && THREADS="${SLURM_CPUS_PER_TASK:-4}"
-BAM_DIR="$(cd "$BAM_DIR" && pwd)"
+
+# IMPROVED: Validate numeric inputs
+for var in THREADS BIN MIN_MAPQ; do
+    val="${!var}"
+    if ! [[ "$val" =~ ^[0-9]+$ ]]; then
+        echo "Error: $var must be a non-negative integer, got: $val" >&2
+        exit 1
+    fi
+done
+
+BAM_DIR="$(cd "$BAM_DIR" && pwd)" || { echo "Error: BAM_DIR does not exist: $BAM_DIR" >&2; exit 1; }
 [[ -z "$TSV"     ]] && TSV="$BAM_DIR/dcs_counts.tsv"
 [[ -z "$OUT_DIR" ]] && OUT_DIR="$(dirname "$BAM_DIR")/bw_mapq${MIN_MAPQ}"
 mkdir -p "$OUT_DIR"
