@@ -238,8 +238,28 @@ if (!all_chr) {
     if (length(ref_gr) == 0) {
       zoom_gr <- custom_genome
     } else {
-      z_start <- max(1,            min(start(ref_gr)) - pad)
-      z_end   <- min(sizes$length, max(end(ref_gr))   + pad)
+      # Pick the largest cluster of regions instead of the full extent.
+      # Otherwise an outlier HOR (e.g. the tiny 132 Mb island on chr2) drags
+      # the zoom out across the whole chromosome and crushes the real signal.
+      # Cluster = contiguous group of regions separated by gaps <= max_gap.
+      # Largest = the cluster with the most total covered bases.
+      dominant_cluster <- function(gr, max_gap = 5e6) {
+        gr <- sort(gr)
+        if (length(gr) <= 1) return(c(min(start(gr)), max(end(gr))))
+        st <- start(gr); en <- end(gr)
+        gaps <- st[-1] - en[-length(en)]
+        ids <- cumsum(c(0, gaps > max_gap)) + 1
+        widths <- tapply(en - st + 1, ids, sum)
+        best <- as.integer(names(which.max(widths)))
+        keep <- which(ids == best)
+        c(min(st[keep]), max(en[keep]))
+      }
+      dc <- dominant_cluster(ref_gr)
+      n_drop <- length(ref_gr) - sum(start(ref_gr) >= dc[1] & end(ref_gr) <= dc[2])
+      if (n_drop > 0)
+        cat("auto-zoom: dropped ", n_drop, " outlier region(s) from zoom calc\n", sep = "")
+      z_start <- max(1,            dc[1] - pad)
+      z_end   <- min(sizes$length, dc[2] + pad)
       zoom_gr <- toGRanges(data.frame(chr = target_chr, start = z_start, end = z_end))
       cat("auto-zoom from ", src, ": ", target_chr, ":", z_start, "-", z_end, "\n", sep = "")
     }
@@ -322,8 +342,23 @@ plot_kp <- function() {
   pp$topmargin       <- 30
   pp$bottommargin    <- 30
   pp$leftmargin      <- 0.10
+  # Give right-side labels (track / overlay names with custom text) enough
+  # canvas so long names like "Chr17_forward(+RT)+ASO treated" don't clip.
+  # Scaled by the longest label among the tracks + overlay rows we're drawing.
+  all_label_names <- c(track_names,
+                       vapply(overlays, function(o) o$name, character(1)))
+  longest_label <- if (length(all_label_names) > 0) max(nchar(all_label_names)) else 0
+  # ~0.007 of canvas width per character at cex 0.55, capped between 0.18 and 0.40
+  pp$rightmargin <- max(0.18, min(0.40, 0.06 + 0.007 * longest_label))
 
-  norm_tag <- if (!skip_dcs) "DCS-normalized" else "raw counts"
+  # Simple two-state label: if any track was actually scaled by DCS we call it
+  # DCS-normalized; otherwise raw counts. Same logic whether the TSV was NA
+  # or just had all-NA / all-1.0 rows.
+  any_scaled <- any(vapply(track_data,
+                           function(t) !is.null(t$sf) && t$sf != 1,
+                           logical(1)))
+  norm_tag <- if (any_scaled) "DCS-normalized" else "raw counts"
+
   default_title <- if (all_chr) {
                      paste0("genome-wide   ", N, " track(s)   ", norm_tag,
                             "   (ymax=", round(ymax, 2), ")")
@@ -423,7 +458,7 @@ out_dir <- dirname(out_prefix)
 if (nzchar(out_dir) && !dir.exists(out_dir))
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-W <- if (all_chr) 14 else 12
+W <- if (all_chr) 16 else 14
 H <- if (all_chr) max(6, 0.35 * (N + n_overlay) + 4) else max(4, 0.4 * (N + n_overlay) + 2)
 
 pdf(paste0(out_prefix, ".pdf"), width = W, height = H); plot_kp(); dev.off()

@@ -116,16 +116,19 @@ if [[ ${#order[@]} -eq 0 ]]; then
     exit 1
 fi
 
-# Pre-flight: print the plan so we can sanity-check before the long bit
+# Pre-flight plan. NA scale factor means no DCS for that barcode — we fall
+# back to scale=1 (raw counts) so a bigwig still gets generated. You'll get
+# a bigwig either way; just be aware "scale=1 (raw)" rows aren't comparable
+# across samples in the same way DCS-normalized ones are.
 echo "Plan (${#order[@]} barcode(s) in TSV):"
 for bc in "${order[@]}"; do
     sf="${SCALES[$bc]}"
     dcs="${DCS_COUNTS[$bc]}"
     bam="$BAM_DIR/${bc}.bam"
-    if [[ "$sf" == "NA" ]]; then
-        printf "  %-15s  skip — no DCS reads (scale=NA)\n" "$bc"
-    elif [[ ! -f "$bam" ]]; then
+    if [[ ! -f "$bam" ]]; then
         printf "  %-15s  skip — BAM not found in %s\n" "$bc" "$BAM_DIR"
+    elif [[ "$sf" == "NA" ]]; then
+        printf "  %-15s  scale=1 (raw, no DCS)   dcs=%s\n" "$bc" "$dcs"
     else
         printf "  %-15s  scale=%-10s dcs=%s\n" "$bc" "$sf" "$dcs"
     fi
@@ -143,17 +146,18 @@ for bc in "${order[@]}"; do
     bam="$BAM_DIR/${bc}.bam"
     bw="$OUT_DIR/${bc}.bw"
 
-    if [[ "$sf" == "NA" ]]; then
-        echo ">> $bc: scale=NA, skipping"
-        skip_count=$((skip_count + 1))
-        echo
-        continue
-    fi
     if [[ ! -f "$bam" ]]; then
         echo ">> $bc: BAM not found ($bam), skipping"
         skip_count=$((skip_count + 1))
         echo
         continue
+    fi
+    # Fall back to scale=1 (raw counts) when DCS scale factor is NA.
+    if [[ "$sf" == "NA" ]]; then
+        sf=1
+        scale_note="(raw, no DCS)"
+    else
+        scale_note=""
     fi
     if [[ -s "$bw" && "$FORCE" -ne 1 ]]; then
         echo ">> $bc: bigwig already exists ($(du -h "$bw" | cut -f1)), use -f to overwrite — skipping"
@@ -164,7 +168,7 @@ for bc in "${order[@]}"; do
 
     step_start=$SECONDS
     echo ">> $bc"
-    echo "   scale factor : $sf"
+    echo "   scale factor : $sf $scale_note"
     echo "   --> $bw"
     echo -n "   running bamCoverage..."
 
