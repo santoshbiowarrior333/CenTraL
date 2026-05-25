@@ -27,6 +27,24 @@ After the run, you have a `bam_pass/` folder full of chunked per-barcode BAMs. C
 
 ---
 
+## Quickstart — three lines on BMRC
+
+If you are on the BMRC cluster (Oxford), this is everything you need:
+
+```bash
+git clone https://github.com/santoshbiowarrior333/CenTraL.git
+cd CenTraL && source scripts/load_bmrc_modules.sh
+./run_dcs_workflow.sh /path/to/your/bam_pass
+```
+
+Line 1 clones the repo. Line 2 loads the four required modules (SAMtools, deepTools, dorado, R-bundle-Bioconductor). Line 3 runs the whole pipeline on your `bam_pass/` directory — merge, DCS count, primary filter, normalized bigwigs, 1bp BEDs, QC plot — and writes results to `./dcs_analysis_<timestamp>/` in your current directory.
+
+For a SLURM job, replace line 3 with `sbatch ./run_dcs_workflow.sh /path/to/your/bam_pass` (no `--time` or `--mem` caps are set, so the job uses the whole node).
+
+On any other cluster, replace line 2 with whichever environment activation gets `samtools`, `dorado` (or `minimap2`), `bamCoverage`, `python3` and `Rscript` on PATH — see the install options below.
+
+---
+
 ## Before you run
 
 CenTraL doesn't basecall, demultiplex, or align — MinKNOW does that live during sequencing. CenTraL assumes:
