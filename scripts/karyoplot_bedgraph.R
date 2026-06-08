@@ -1,34 +1,32 @@
 #!/usr/bin/env Rscript
-# Karyoplot of one OR many bedgraph tracks. Drop in one bedgraph to get a
+# Karyoplot of one OR many bedgraph/bigwig tracks. Drop in one track to get a
 # single-track plot; drop in several to get them stacked above each chromosome
 # bar (each labelled, sharing the same y-axis for easy comparison).
 #
 # Same input pattern as before:
 #   - chrom sizes file (UCSC chr<TAB>length)
 #   - regions BED for centromere / HOR highlight (or NA)
-#   - one or more bedgraphs (chr/start/end/count)
+#   - one or more bedgraphs (chr/start/end/count) OR bigwigs (.bw/.bigwig)
 #
-# Optional overlay BEDs (anywhere in args, drawn as semi-transparent vertical
-# tick rows at the top of the stack):
-#   --primer-fwd FILE   navy ticks at every primer site
+# Optional overlay BEDs (anywhere in args):
+#   --primer-fwd FILE   navy ticks
 #   --primer-rev FILE   dark-red ticks
 #   --aso-plus FILE     dark-green ticks
 #   --aso-minus FILE    dark-purple ticks
 #
-# Optional naming + title flags:
-#   --primer-fwd-name "..."   override the "primer-fwd" row label
-#   --primer-rev-name "..."
-#   --aso-plus-name "..."
-#   --aso-minus-name "..."
-#   --names "A|B|C|..."       pipe-separated, positional per bedgraph
-#   --title "..."             replace the default heading
-#   --dpi N                   PNG resolution (default 150); PDF is vector
+# Fix the y-axis (per track or shared). Counts above the ceiling are clamped.
+#   --ymax N            one number; every track fixed to N. Pass the same N
+#                       across runs to compare across chromosomes.
+#   --ymax "a|b|c|..."  positional, one slot per track. Each slot:
+#                         <number> = fix that track to it
+#                         auto     = that track scales to its own max
+#                         (blank)  = that track joins the shared pool
+#                                    (pool max = max over all blank slots)
+#   (omit)              all tracks share one auto max (default).
 #
-# Inline naming: append "||Display name" to any bedgraph or overlay path.
-# Quote the whole arg so the shell doesn't choke on || or parens. e.g.
-#   "path/to/barcode01.startcount.bedgraph||Sample A (rep 1)"
+# Other flags: --names "A|B|C", --title "...", --dpi N,
+#              --primer-fwd-name "...", etc.
 
-# ---- user library + install missing packages ----
 user_lib <- Sys.getenv("R_LIBS_USER", unset = file.path(Sys.getenv("HOME"), "R", "library"))
 dir.create(user_lib, recursive = TRUE, showWarnings = FALSE)
 .libPaths(c(user_lib, .libPaths()))
@@ -47,10 +45,10 @@ suppressPackageStartupMessages({
   install_if_missing("BiocManager")
   install_if_missing("regioneR",    bioc = TRUE)
   install_if_missing("karyoploteR", bioc = TRUE)
+  install_if_missing("rtracklayer", bioc = TRUE)
   library(karyoploteR); library(regioneR); library(GenomicRanges)
 })
 
-# ---- args (parse named flags first, then positional) ----
 raw_args   <- commandArgs(trailingOnly = TRUE)
 primer_fwd <- NA_character_
 primer_rev <- NA_character_
@@ -62,6 +60,7 @@ aso_plus_name   <- "aso-plus"
 aso_minus_name  <- "aso-minus"
 custom_names    <- NA_character_
 custom_title    <- NA_character_
+ymax_arg        <- NA_character_
 png_dpi         <- 150
 args <- character(0)
 i <- 1
@@ -77,12 +76,13 @@ while (i <= length(raw_args)) {
   else if (a == "--aso-minus-name")  { aso_minus_name  <- raw_args[i + 1]; i <- i + 2 }
   else if (a == "--names")           { custom_names    <- raw_args[i + 1]; i <- i + 2 }
   else if (a == "--title")           { custom_title    <- raw_args[i + 1]; i <- i + 2 }
+  else if (a == "--ymax")            { ymax_arg        <- raw_args[i + 1]; i <- i + 2 }
   else if (a == "--dpi")             { png_dpi         <- as.integer(raw_args[i + 1]); i <- i + 2 }
   else                               { args <- c(args, a);                 i <- i + 1 }
 }
 
 if (length(args) < 8)
-  stop("Usage: Rscript karyoplot_bedgraph.R <chrom.sizes> <regions> <backdrop> <out_prefix> <target_chr> <zoom> <dcs_tsv> <bedgraph1> [bedgraph2 ...]  [--primer-fwd F] [--primer-rev F] [--aso-plus F] [--aso-minus F] [--names ...] [--title ...] [--dpi N]")
+  stop("Usage: Rscript karyoplot_bedgraph.R <chrom.sizes> <regions> <backdrop> <out_prefix> <target_chr> <zoom> <dcs_tsv> <track1> [track2 ...]  [--primer-fwd F] [--primer-rev F] [--aso-plus F] [--aso-minus F] [--ymax VALUE] [--dpi N] [--names A|B|...] [--title ...]")
 
 chrom_sizes_file <- args[1]
 regions_file     <- args[2]
@@ -125,7 +125,6 @@ skip_dcs      <- dcs_tsv_file  %in% c("NA", "-", "none", "NONE")
 
 cat("Tracks to plot: ", length(bedgraph_files), "\n", sep = "")
 
-# ---- chromosome sizes ----
 sizes <- read.table(chrom_sizes_file, header = FALSE,
                     col.names = c("chr", "length"), stringsAsFactors = FALSE)
 chr_order <- function(x) {
@@ -141,7 +140,6 @@ if (!all_chr) {
 }
 custom_genome <- toGRanges(data.frame(chr = sizes$chr, start = 1, end = sizes$length))
 
-# ---- optional DCS scale factor lookup ----
 scale_lookup <- list()
 if (!skip_dcs) {
   dcs <- read.table(dcs_tsv_file, header = TRUE, stringsAsFactors = FALSE, sep = "\t")
@@ -154,26 +152,42 @@ if (!skip_dcs) {
   cat("DCS scale factors loaded for ", length(scale_lookup), " barcode(s)\n", sep = "")
 }
 
-# ---- read each bedgraph; apply scale factor if available ----
+# Read a coverage track as chr/start/end/count regardless of format.
+# .bw/.bigwig go through rtracklayer (restricted to target_chr when set).
+read_track <- function(f) {
+  ext <- tolower(tools::file_ext(f))
+  if (ext %in% c("bw", "bigwig")) {
+    sel <- if (!all_chr) GRanges(target_chr, IRanges(1, sizes$length[sizes$chr == target_chr])) else NULL
+    gr <- if (is.null(sel)) rtracklayer::import(f, format = "BigWig")
+          else              rtracklayer::import(f, format = "BigWig", which = sel)
+    data.frame(chr   = as.character(seqnames(gr)),
+               start = start(gr) - 1, end = end(gr),
+               count = score(gr), stringsAsFactors = FALSE)
+  } else {
+    read.table(f, header = FALSE, stringsAsFactors = FALSE,
+               col.names = c("chr", "start", "end", "count"))
+  }
+}
+
 track_names <- character(length(bedgraph_files))
 track_data  <- vector("list", length(bedgraph_files))
 for (i in seq_along(bedgraph_files)) {
   pn <- split_pathname(bedgraph_files[i])
   f  <- pn$path
-  if (!file.exists(f)) stop("Bedgraph not found: ", f)
+  if (!file.exists(f)) stop("Track not found: ", f)
   if (!is.na(pn$name)) {
     bc <- pn$name
   } else {
     bc <- sub("\\.bedgraph$", "", sub("\\.startcount\\.bedgraph$", "", basename(f)))
     bc <- sub("\\.sites\\.bedgraph$", "", bc)
+    bc <- sub("\\.(bw|bigwig)$", "", bc)
   }
   track_names[i] <- bc
-  bg <- read.table(f, header = FALSE, stringsAsFactors = FALSE,
-                   col.names = c("chr", "start", "end", "count"))
+  bg <- read_track(f)
   if (!all_chr) bg <- bg[bg$chr == target_chr, ]
   bg <- bg[bg$chr %in% sizes$chr, ]
   if (nrow(bg) == 0) {
-    cat("  ", bc, ": no entries on target — track will be blank\n", sep = "")
+    cat("  ", bc, ": no entries on target - track will be blank\n", sep = "")
     track_data[[i]] <- list(gr = GRanges(), count = numeric(0), name = bc, sf = 1)
     next
   }
@@ -185,9 +199,8 @@ for (i in seq_along(bedgraph_files)) {
   track_data[[i]] <- list(gr = toGRanges(bg[, 1:3]), count = scaled, name = bc, sf = sf)
 }
 nonempty <- Filter(function(t) length(t$count) > 0, track_data)
-if (length(nonempty) == 0) stop("All tracks empty — nothing to plot.")
+if (length(nonempty) == 0) stop("All tracks empty - nothing to plot.")
 
-# Apply --names overrides (pipe-separated, positional).
 if (!is_na_arg(custom_names)) {
   parsed_names <- strsplit(custom_names, "|", fixed = TRUE)[[1]]
   for (i in seq_along(track_data)) {
@@ -196,11 +209,9 @@ if (!is_na_arg(custom_names)) {
       track_names[i]       <- parsed_names[i]
     }
   }
-  cat("Renamed tracks (from --names): ",
-      paste(track_names, collapse = ", "), "\n", sep = "")
+  cat("Renamed tracks (from --names): ", paste(track_names, collapse = ", "), "\n", sep = "")
 }
 
-# ---- optional region highlight ----
 read_regions <- function(path) {
   if (!file.exists(path)) return(GRanges())
   first <- trimws(readLines(path, n = 1, warn = FALSE))
@@ -223,7 +234,6 @@ backdrop <- if (!skip_backdrop) read_regions(backdrop_file) else GRanges()
 cat("region intervals: ", length(regions),
     "   backdrop intervals: ", length(backdrop), "\n", sep = "")
 
-# ---- zoom (single-chr only). auto picks the dominant cluster of regions ----
 zoom_gr <- NULL
 if (!all_chr) {
   pad <- 2e5
@@ -236,8 +246,6 @@ if (!all_chr) {
     if (length(ref_gr) == 0) {
       zoom_gr <- custom_genome
     } else {
-      # Largest contiguous cluster (gap threshold 5 Mb). Drops outlier islands
-      # so e.g. chr2 zooms to the centromere, not chr2 + a tiny HOR at 132 Mb.
       dominant_cluster <- function(gr, max_gap = 5e6) {
         gr <- sort(gr)
         if (length(gr) <= 1) return(c(min(start(gr)), max(end(gr))))
@@ -251,9 +259,8 @@ if (!all_chr) {
       }
       dc <- dominant_cluster(ref_gr)
       n_drop <- length(ref_gr) - sum(start(ref_gr) >= dc[1] & end(ref_gr) <= dc[2])
-      if (n_drop > 0)
-        cat("auto-zoom: dropped ", n_drop, " outlier region(s) from zoom calc\n", sep = "")
-      z_start <- max(1,            dc[1] - pad)
+      if (n_drop > 0) cat("auto-zoom: dropped ", n_drop, " outlier region(s) from zoom calc\n", sep = "")
+      z_start <- max(1, dc[1] - pad)
       z_end   <- min(sizes$length, dc[2] + pad)
       zoom_gr <- toGRanges(data.frame(chr = target_chr, start = z_start, end = z_end))
       cat("auto-zoom from ", src, ": ", target_chr, ":", z_start, "-", z_end, "\n", sep = "")
@@ -265,11 +272,9 @@ if (!all_chr) {
   }
 }
 
-# widen narrow bars for visibility at this zoom
 zoomspan <- if (!is.null(zoom_gr)) end(zoom_gr) - start(zoom_gr) + 1 else sum(as.numeric(width(custom_genome)))
 draw_w   <- max(round(zoomspan / 1500), 50)
 
-# clip each track to the visible window
 clip_gr <- if (!is.null(zoom_gr)) zoom_gr else custom_genome
 for (i in seq_along(track_data)) {
   t <- track_data[[i]]
@@ -278,14 +283,65 @@ for (i in seq_along(track_data)) {
   track_data[[i]]$gr    <- t$gr[keep]
   track_data[[i]]$count <- t$count[keep]
 }
-nonempty <- Filter(function(t) length(t$count) > 0, track_data)
-ymax <- if (length(nonempty) > 0) max(unlist(lapply(nonempty, function(t) t$count))) else 1
-cat("Shared ymax across bedgraph tracks (within plotted region): ", round(ymax, 2), "\n", sep = "")
+
+# ---- per-track y-axis ceilings ----
+spec <- rep("shared", length(track_data))
+if (!is_na_arg(ymax_arg)) {
+  if (grepl("|", ymax_arg, fixed = TRUE)) {
+    parts <- trimws(strsplit(ymax_arg, "|", fixed = TRUE)[[1]])
+    for (i in seq_along(track_data)) {
+      v <- if (i <= length(parts)) parts[i] else ""
+      spec[i] <- if (nzchar(v)) v else "shared"
+    }
+  } else if (tolower(ymax_arg) == "auto") {
+    spec <- rep("shared", length(track_data))
+  } else {
+    spec <- rep(ymax_arg, length(track_data))
+  }
+}
+shared_idx <- which(spec == "shared")
+shared_pool_max <- 1
+if (length(shared_idx) > 0) {
+  vals <- unlist(lapply(track_data[shared_idx],
+                        function(t) if (length(t$count)) t$count else numeric(0)))
+  if (length(vals) > 0 && is.finite(max(vals))) shared_pool_max <- max(vals)
+}
+any_fixed <- FALSE
+for (i in seq_along(track_data)) {
+  s   <- spec[i]
+  cnt <- track_data[[i]]$count
+  if (tolower(s) == "auto") {
+    ym <- if (length(cnt)) max(cnt) else 1
+  } else if (s == "shared") {
+    ym <- shared_pool_max
+  } else {
+    ym <- suppressWarnings(as.numeric(s))
+    if (is.na(ym) || ym <= 0)
+      stop("--ymax slot must be a positive number, 'auto', or blank; got: '", s, "'")
+    any_fixed <- TRUE
+  }
+  if (!is.finite(ym) || ym <= 0) ym <- 1
+  n_clip <- 0L
+  if (length(cnt) > 0) {
+    over <- cnt > ym
+    n_clip <- sum(over)
+    cnt[over] <- ym
+    track_data[[i]]$count <- cnt
+  }
+  track_data[[i]]$ymax  <- ym
+  track_data[[i]]$nclip <- n_clip
+}
+cat("y-axis ceilings (within plotted region):\n")
+for (i in seq_along(track_data)) {
+  td <- track_data[[i]]
+  cat("  ", td$name, ": ymax=", round(td$ymax, 2), " [", spec[i], "]",
+      if (td$nclip > 0) paste0("  clamped ", td$nclip, " position(s)") else "",
+      "\n", sep = "")
+}
 
 N <- length(track_data)
 palette_cols <- if (N == 1) "#1f77b4" else hcl.colors(N, palette = "Dynamic")
 
-# ---- overlay BEDs ----
 load_overlay <- function(path) {
   if (is_na_arg(path)) return(NULL)
   if (!file.exists(path)) { message("Overlay not found: ", path); return(NULL) }
@@ -317,7 +373,6 @@ addov(aso_minus_name,  load_overlay(am$path), ASO_MINUS_COL,  ASO_MINUS_RGB)
 n_overlay <- length(overlays)
 if (n_overlay > 0) cat("overlay BED rows: ", n_overlay, "\n", sep = "")
 
-# ---- plot ----
 plot_kp <- function() {
   pp <- getDefaultPlotParams(plot.type = 1)
   pp$ideogramheight  <- if (all_chr) 18 else 10
@@ -328,21 +383,21 @@ plot_kp <- function() {
   pp$topmargin       <- 30
   pp$bottommargin    <- 30
   pp$leftmargin      <- 0.10
-  # Scale right margin to longest track/overlay label so they don't clip.
   all_label_names <- c(track_names, vapply(overlays, function(o) o$name, character(1)))
   longest_label <- if (length(all_label_names) > 0) max(nchar(all_label_names)) else 0
   pp$rightmargin <- max(0.18, min(0.40, 0.06 + 0.007 * longest_label))
 
-  # Simple two-state label: any track actually scaled = DCS-normalized, else raw.
   any_scaled <- any(vapply(track_data, function(t) !is.null(t$sf) && t$sf != 1, logical(1)))
   norm_tag <- if (any_scaled) "DCS-normalized" else "raw counts"
+  ymaxes   <- vapply(track_data, function(t) t$ymax, numeric(1))
+  ymax_lab <- if (length(unique(round(ymaxes, 6))) == 1)
+                paste0("ymax=", round(ymaxes[1], 2), if (any_fixed) " fixed" else "")
+              else "ymax=per-track"
   default_title <- if (all_chr) {
-                     paste0("genome-wide   ", N, " track(s)   ", norm_tag,
-                            "   (ymax=", round(ymax, 2), ")")
+                     paste0("genome-wide   ", N, " track(s)   ", norm_tag, "   (", ymax_lab, ")")
                    } else {
                      paste0(target_chr, ":", start(zoom_gr), "-", end(zoom_gr),
-                            "   ", N, " track(s)   ", norm_tag,
-                            "   (ymax=", round(ymax, 2), ")")
+                            "   ", N, " track(s)   ", norm_tag, "   (", ymax_lab, ")")
                    }
   title_txt <- if (is_na_arg(custom_title)) default_title else custom_title
 
@@ -353,8 +408,7 @@ plot_kp <- function() {
                         plot.params = pp, main = title_txt)
         }
   tick <- if (all_chr) 5e7 else 5e5
-  kpAddBaseNumbers(kp, tick.dist = tick, add.units = TRUE, cex = 0.5,
-                   tick.len = 1.5, minor.tick.len = 0.8)
+  kpAddBaseNumbers(kp, tick.dist = tick, add.units = TRUE, cex = 0.5, tick.len = 1.5, minor.tick.len = 0.8)
   kpRect(kp, data = custom_genome, y0 = 0, y1 = 1,
          col = "#eaebe4", border = "#888888", lwd = 0.5, data.panel = "ideogram")
   if (length(backdrop) > 0)
@@ -383,10 +437,8 @@ plot_kp <- function() {
                  r0 = b$r0, r1 = b$r1,
                  col = ov$col, lwd = 0.6, data.panel = 1)
     }
-    kpAddLabels(kp,
-                labels = sprintf("%s (n=%d)", ov$name, length(ov$gr)),
-                r0 = b$r0, r1 = b$r1,
-                data.panel = 1, side = "right",
+    kpAddLabels(kp, labels = sprintf("%s (n=%d)", ov$name, length(ov$gr)),
+                r0 = b$r0, r1 = b$r1, data.panel = 1, side = "right",
                 cex = 0.55, col = ov$label_col, label.margin = 0.005)
   }
 
@@ -395,34 +447,29 @@ plot_kp <- function() {
     b   <- band(n_overlay + i)
     r0  <- b$r0; r1 <- b$r1
     col <- palette_cols[i]
-    kpAxis(kp, ymin = 0, ymax = ymax, data.panel = 1,
+    ty  <- t$ymax
+    kpAxis(kp, ymin = 0, ymax = ty, data.panel = 1,
            r0 = r0, r1 = r1,
-           tick.pos = c(0, ymax),
-           labels = c("0", formatC(ymax, format = "g", digits = 3)),
+           tick.pos = c(0, ty),
+           labels = c("0", formatC(ty, format = "g", digits = 3)),
            cex = 0.4, col = "#666666")
     if (N > 1)
       kpAddLabels(kp, labels = t$name, r0 = r0, r1 = r1,
-                  data.panel = 1, side = "right",
-                  cex = 0.55, label.margin = 0.005)
+                  data.panel = 1, side = "right", cex = 0.55, label.margin = 0.005)
     if (length(t$gr) > 0) {
       drawn <- resize(t$gr, width = draw_w, fix = "center")
       kpBars(kp, data = drawn, y0 = 0, y1 = t$count,
-             ymin = 0, ymax = ymax,
-             r0 = r0, r1 = r1,
-             col = col, border = col, lwd = 0.2,
-             data.panel = 1)
+             ymin = 0, ymax = ty, r0 = r0, r1 = r1,
+             col = col, border = col, lwd = 0.2, data.panel = 1)
     }
   }
 }
 
-# ---- write ----
 out_dir <- dirname(out_prefix)
 if (nzchar(out_dir) && !dir.exists(out_dir))
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-
 W <- if (all_chr) 16 else 14
 H <- if (all_chr) max(6, 0.35 * (N + n_overlay) + 4) else max(4, 0.4 * (N + n_overlay) + 2)
-
 pdf(paste0(out_prefix, ".pdf"), width = W, height = H); plot_kp(); dev.off()
 tryCatch({
   png(paste0(out_prefix, ".png"), width = W * png_dpi, height = H * png_dpi,
@@ -430,7 +477,6 @@ tryCatch({
   plot_kp(); dev.off()
   cat("PNG DPI used : ", png_dpi, "\n", sep = "")
 }, error = function(e) message("PNG cairo failed: ", conditionMessage(e)))
-
 cat("Wrote ", out_prefix, ".pdf / .png   tracks: ",
     paste(track_names, collapse = ", "),
     if (n_overlay > 0) paste0("   overlays: ", n_overlay) else "",
