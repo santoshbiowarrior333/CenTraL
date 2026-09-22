@@ -3,8 +3,8 @@ chr17	forward	TCGTTCGAAACGGGTATATC	CCATGCCGTCGAAACAAGTT	worked	used in the proto
 chr17	reverse	AAGGAATGTTCAGCTCTGTG	CCATGCCGTCGAAACAAGTT	worked	used in the protocol
 chr2	forward	AACAGTCCCTTTCATAGAGC	CCATGCCGTCGAAACAAGTT	worked	used in the protocol
 chr2	reverse	AAGCTAGACAAATATCCACT	CCATGCCGTCGAAACAAGTT	worked	used in the protocol
-GUSB	forward	CTGTCACCAAGAGCCAGTTCCT	ACTTACCGTCGAATTTACCT	worked	reference gene; separate handle
-GUSB	reverse	GGTTGAAGTCCTTCACCAGCAG	ACTTACCGTCGAATTTACCT	worked	reference gene; separate handle
+GUSB	forward	CTGTCACCAAGAGCCAGTTCCT	ACTTACCGTCGAATTTACCT	worked	reference gene for ASO experiments; separate handle
+GUSB	reverse	GGTTGAAGTCCTTCACCAGCAG	ACTTACCGTCGAATTTACCT	worked	reference gene for ASO experiments; separate handle
 chr1	forward	TGTGTTGTGTGTATTCAACT	CCATGCCGTCGAAACAAGTT	proposed	validate before use
 chr1	reverse	TTCTACCATTGACCTCAAAG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
 chr2	forward_alt	TGGACATTTGGAGCGCTCTC	CCATGCCGTCGAAACAAGTT	proposed	alternative pair
@@ -55,5 +55,5 @@ Pan-HOR	forward	TGTGTTGTGTGTATTCAACT	CCATGCCGTCGAAACAAGTT	proposed	pan-array rea
 Pan-HOR	reverse	CCACCTGCAGATTCTACAAA	CCATGCCGTCGAAACAAGTT	proposed	pan-array readout; coincides with chr4 reverse
 ACTB	forward	CACCATTGGCAATGAGCGGTTC	ACTTACCGTCGAATTTACCT	proposed	reference gene; separate handle
 ACTB	reverse	GAAGCATTTGCGGTGGACGATG	ACTTACCGTCGAATTTACCT	proposed	reference gene; separate handle
-GAPDH	forward	GTCTCCTCTGACTTCAACAGCG	ACTTACCGTCGAATTTACCT	proposed	varied between replicates in our hands; not used for normalisation
-GAPDH	reverse	CTTGGAGGCCATGTGGGCCAT	ACTTACCGTCGAATTTACCT	proposed	varied between replicates in our hands; not used for normalisation
+GAPDH	forward	GTCTCCTCTGACTTCAACAGCG	ACTTACCGTCGAATTTACCT	proposed	default reference gene; separate handle; in ASO experiments use GUSB (ASO off-target on GAPDH)
+GAPDH	reverse	CTTGGAGGCCATGTGGGCCAT	ACTTACCGTCGAATTTACCT	proposed	default reference gene; separate handle; in ASO experiments use GUSB (ASO off-target on GAPDH)

@@ -23,11 +23,11 @@ Everything for the assay lives in [`qpcr/`](qpcr/):
 
 - [`qpcr/protocol.md`](qpcr/protocol.md) - the wet-lab protocol summary: RNA isolation, double DNase, strand-specific RT, the single tagging cycle, ExoI cleanup and qPCR, with the critical points and troubleshooting.
 - [`qpcr/primers.tsv`](qpcr/primers.tsv) - the handled primer sets: the worked chr17/chr2/GUSB set plus proposed sets for every chromosome and a Pan-HOR pair.
-- [`qpcr/analyze_ddct.py`](qpcr/analyze_ddct.py) - ddCt analysis from a Ct table (technical-replicate averaging, +RT/-RT gap check, dCt against GUSB, ddCt against your calibrator condition, fold changes and a plot):
+- [`qpcr/analyze_ddct.py`](qpcr/analyze_ddct.py) - ddCt analysis from a Ct table (technical-replicate averaging, +RT/-RT gap check, dCt against the reference gene (GAPDH default, GUSB for ASO experiments), ddCt against your calibrator condition, fold changes and a plot):
 
 ```bash
 python3 qpcr/analyze_ddct.py qpcr/example_ct.csv \
-    --reference GUSB --calibrator untreated --out results_qpcr
+    --calibrator untreated --out results_qpcr
 ```
 
 ---

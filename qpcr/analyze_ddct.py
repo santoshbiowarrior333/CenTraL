@@ -7,7 +7,7 @@ Input: a CSV of Ct values with the columns
 where
     sample     biological sample id (e.g. rep1, rep2, rep3)
     condition  treatment/state (one of them is the calibrator)
-    target     e.g. chr2, chr17, GUSB
+    target     e.g. chr2, chr17, GAPDH
     strand     forward / reverse / na (use na for reference genes)
     rt         +RT or -RT
     replicate  technical replicate number
@@ -24,8 +24,9 @@ available, <out>/fold_changes.png. Statistics (t test / ANOVA on dCt) are
 left to your stats software; the per-sample dCt table is the input for that.
 
 Usage:
-    python3 analyze_ddct.py example_ct.csv --reference GUSB \
-        --calibrator untreated --out results_qpcr
+    python3 analyze_ddct.py example_ct.csv --calibrator untreated --out results_qpcr
+    # GAPDH is the default reference; add --reference GUSB for ASO experiments
+    # (ASO treatment had an off-target effect on the GAPDH transcript)
 """
 import argparse
 import csv
@@ -59,8 +60,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("csv_file")
-    ap.add_argument("--reference", default="GUSB",
-                    help="reference target for dCt (default GUSB)")
+    ap.add_argument("--reference", default="GAPDH",
+                    help="reference target for dCt (default GAPDH; use GUSB for ASO experiments)")
     ap.add_argument("--calibrator", required=True,
                     help="condition used as the ddCt baseline")
     ap.add_argument("--min-rt-gap", type=float, default=5.0,

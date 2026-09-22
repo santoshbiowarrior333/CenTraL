@@ -30,8 +30,8 @@ break the exclusion.
   alpha-satellite. Confirm in silico before ordering.
 - Targets can share a handle (chr2 and chr17 below do); they stay separable
   because each target is reverse transcribed in its own reaction.
-- The housekeeping reference (GUSB) sits on a second handle so the centromere
-  universal primer can never amplify it.
+- The housekeeping reference (GAPDH by default, or GUSB) sits on a second
+  handle so the centromere universal primer can never amplify it.
 - The ordered primer is handle + locus sequence, for example chr17 forward is
   CCATGCCGTCGAAACAAGTT-TCGTTCGAAACGGGTATATC.
 - Handles carry a slight self-dimer and suppression-PCR risk; heating primers
@@ -86,19 +86,21 @@ below 0.3 as no amplification.
 
 ## Quantification
 
-Average technical replicates. dCt = Ct(target) - Ct(GUSB). Pick a calibrator
+Average technical replicates. dCt = Ct(target) - Ct(reference). Pick a calibrator
 condition; ddCt = dCt(sample) - mean dCt(calibrator). Relative level =
 2^-ddCt. Test significance on dCt values (t test or one-way ANOVA).
 
-Use GUSB as the reference. In our hands GAPDH varied between replicates
-(ASO treatment had an off-target effect on the GAPDH transcript).
+GAPDH is the default reference. In ASO experiments use GUSB instead: ASO
+treatment had an off-target effect on the GAPDH transcript in our hands, so
+GAPDH is unreliable there.
 
 [`analyze_ddct.py`](analyze_ddct.py) does this from a Ct table and checks
 the +RT/-RT gap:
 
 ```bash
-python3 qpcr/analyze_ddct.py qpcr/example_ct.csv --reference GUSB \
+python3 qpcr/analyze_ddct.py qpcr/example_ct.csv \
   --calibrator untreated --out results_qpcr
+# GAPDH is the default reference; add --reference GUSB for ASO experiments
 ```
 
 ## Troubleshooting (qPCR stage)
@@ -115,7 +117,7 @@ python3 qpcr/analyze_ddct.py qpcr/example_ct.csv --reference GUSB \
 The same single-cycle tagged product feeds sequencing: amplify 31 cycles
 with the universal primers only (genomic DNA still cannot gain both
 handles), SPRI clean, end-prep, native barcode per sample (each strand and
-the GUSB control gets its own barcode), pool, adaptor ligation with Short
+the reference control gets its own barcode), pool, adaptor ligation with Short
 Fragment Buffer washes, and sequence on a MinION/PromethION with live
 basecalling and live alignment in MinKNOW. Then run the pipeline in the repo
 root: `./run_dcs_workflow.sh /path/to/bam_pass`.
