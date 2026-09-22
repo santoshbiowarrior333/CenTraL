@@ -15,6 +15,8 @@ CenTraL is a two-stage method for measuring centromeric transcription:
 
 Run Stage 1 on its own for quantification. Add Stage 2 only when you want to know where in the centromere the transcripts come from.
 
+![CenTraL two-stage overview: Stage 1 strand-specific qPCR on top, optional Stage 2 Nanopore long-read sequencing below](overview.gif)
+
 ---
 
 ## Stage 1 - strand-specific qPCR (start here)
