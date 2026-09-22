@@ -4,6 +4,8 @@
 
 # CenTraL
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22897098.svg)](https://doi.org/10.5281/zenodo.22897098)
+
 _**Cen**tromeric **Tra**nscript capturing and **L**ong read sequencing._
 
 **Status:** v1.0 alpha - in active use, API may change before the paper is published.
