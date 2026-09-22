@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="banner.svg" alt="CenTraL pipeline: cell, centromeric RNA, cDNA + PCR, Nanopore sequencing, karyoplot output" width="100%">
+  <img src="qpcr/stage1_protocol.svg" alt="Stage 1 protocol: RNA isolation with double DNase, strand-specific RT with handled primer, single tagging cycle, ExoI cleanup, qPCR with universal primer" width="100%">
+</p>
+<p align="center">
+  <img src="banner.svg" alt="Stage 2 sequencing pipeline: cell, centromeric RNA, cDNA + PCR, Nanopore sequencing, karyoplot output" width="100%">
 </p>
 
 # CenTraL
