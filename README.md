@@ -1,10 +1,3 @@
-<p align="center">
-  <img src="qpcr/stage1_protocol.svg" alt="Stage 1 protocol: RNA isolation with double DNase, strand-specific RT with handled primer, single tagging cycle, ExoI cleanup, qPCR with universal primer" width="100%">
-</p>
-<p align="center">
-  <img src="banner.svg" alt="Stage 2 sequencing pipeline: cell, centromeric RNA, cDNA + PCR, Nanopore sequencing, karyoplot output" width="100%">
-</p>
-
 # CenTraL
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22897098.svg)](https://doi.org/10.5281/zenodo.22897098)
@@ -26,6 +19,10 @@ Run Stage 1 on its own for quantification. Add Stage 2 only when you want to kno
 
 ## Stage 1 - strand-specific qPCR (start here)
 
+<p align="center">
+  <img src="qpcr/stage1_protocol.svg" alt="Stage 1 protocol: RNA isolation with double DNase, strand-specific RT with handled primer, single tagging cycle, ExoI cleanup, qPCR with universal primer" width="100%">
+</p>
+
 Everything for the assay lives in [`qpcr/`](qpcr/):
 
 - [`qpcr/protocol.md`](qpcr/protocol.md) - the wet-lab protocol summary: RNA isolation, double DNase, strand-specific RT, the single tagging cycle, ExoI cleanup and qPCR, with the critical points and troubleshooting.
@@ -40,6 +37,10 @@ python3 qpcr/analyze_ddct.py qpcr/example_ct.csv \
 ---
 
 ## Stage 2 - Nanopore long-read analysis (optional)
+
+<p align="center">
+  <img src="stage2_sequencing.svg" alt="Stage 2: Nanopore long-read sequencing pipeline from cell and centromeric RNA to karyoplot tracks" width="100%">
+</p>
 
 A small post-sequencing pipeline for **per-barcode Nanopore cDNA amplicon data** from centromeric regions. Written for our centromere RNA work in RPE1 cells - native-barcoded libraries on a MinION/PromethION with live basecalling and alignment in MinKNOW. Library preparation from the Stage 1 product is described at the end of [`qpcr/protocol.md`](qpcr/protocol.md).
 

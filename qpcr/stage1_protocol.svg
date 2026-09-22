@@ -1,11 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 240" role="img" aria-label="CenTraL Stage 1 protocol: RNA isolation with double DNase, strand-specific RT with handled primer, single tagging cycle, ExoI cleanup, qPCR with universal primer">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 52 1200 172" role="img" aria-label="CenTraL Stage 1 protocol: RNA isolation with double DNase, strand-specific RT with handled primer, single tagging cycle, ExoI cleanup, qPCR with universal primer">
   <title>CenTraL Stage 1</title>
   <desc>Animated protocol diagram for Stage 1, the strand-specific nested barcode RT-qPCR. Steps appear in sequence then the cycle restarts. Sequencing is an optional Stage 2.</desc>
 
   <rect x="0" y="0" width="1200" height="240" fill="#ffffff"/>
-
-  <text x="40" y="34" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#991b1b" letter-spacing="0.5">STAGE 1<tspan font-weight="400" fill="#64748b" letter-spacing="0"> &#183; strand-specific qPCR</tspan></text>
-  <line x1="40" y1="42" x2="1160" y2="42" stroke="#e2e8f0" stroke-width="1"/>
 
   <defs>
     <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
