@@ -8,7 +8,33 @@ _**Cen**tromeric **Tra**nscript capturing and **L**ong read sequencing._
 
 **Status:** v1.0 alpha - in active use, API may change before the paper is published.
 
-A small post-sequencing pipeline for **per-barcode Nanopore cDNA amplicon data** from centromeric regions. Written for our centromere RNA work in RPE1 cells - native-barcoded libraries on a MinION/PromethION with live basecalling and alignment in MinKNOW.
+CenTraL is a two-stage method for measuring centromeric transcription:
+
+1. **Stage 1 - nested barcode strand-specific RT-qPCR.** The core assay. A universal handle (absent from the genome) is added during reverse transcription and a single tagging cycle, so qPCR with the handle primer amplifies cDNA but stays blind to genomic DNA, the classic problem at high-copy alpha-satellite. Forward and reverse transcripts are read in separate reactions, so strand bias is measured, not averaged out.
+2. **Stage 2 - Nanopore long-read sequencing (optional).** The same tagged products are amplified with the universal primers, native-barcoded and sequenced, and this repo's pipeline places the transcripts onto individual higher-order repeat (HOR) arrays.
+
+Run Stage 1 on its own for quantification. Add Stage 2 only when you want to know where in the centromere the transcripts come from.
+
+---
+
+## Stage 1 - strand-specific qPCR (start here)
+
+Everything for the assay lives in [`qpcr/`](qpcr/):
+
+- [`qpcr/protocol.md`](qpcr/protocol.md) - the wet-lab protocol summary: RNA isolation, double DNase, strand-specific RT, the single tagging cycle, ExoI cleanup and qPCR, with the critical points and troubleshooting.
+- [`qpcr/primers.tsv`](qpcr/primers.tsv) - the handled primer sets: the worked chr17/chr2/GUSB set plus proposed sets for every chromosome and a Pan-HOR pair.
+- [`qpcr/analyze_ddct.py`](qpcr/analyze_ddct.py) - ddCt analysis from a Ct table (technical-replicate averaging, +RT/-RT gap check, dCt against GUSB, ddCt against your calibrator condition, fold changes and a plot):
+
+```bash
+python3 qpcr/analyze_ddct.py qpcr/example_ct.csv \
+    --reference GUSB --calibrator untreated --out results_qpcr
+```
+
+---
+
+## Stage 2 - Nanopore long-read analysis (optional)
+
+A small post-sequencing pipeline for **per-barcode Nanopore cDNA amplicon data** from centromeric regions. Written for our centromere RNA work in RPE1 cells - native-barcoded libraries on a MinION/PromethION with live basecalling and alignment in MinKNOW. Library preparation from the Stage 1 product is described at the end of [`qpcr/protocol.md`](qpcr/protocol.md).
 
 After the run, you have a `bam_pass/` folder full of chunked per-barcode BAMs. CenTraL turns that into:
 
@@ -503,7 +529,12 @@ CenTraL/
 ├── LICENSE                                MIT
 ├── .gitignore                             keeps run outputs out of git
 ├── environment.yml                        conda env spec for reproducibility
-├── run_dcs_workflow.sh                    ← ENTRY POINT - one command, does steps 1–6
+├── qpcr/                                  ← STAGE 1 - the qPCR assay
+│   ├── protocol.md                        wet-lab protocol summary (stages A-E)
+│   ├── primers.tsv                        handled primer sets (worked + proposed)
+│   ├── analyze_ddct.py                    ddCt analysis from a Ct table
+│   └── example_ct.csv                     demo input for analyze_ddct.py
+├── run_dcs_workflow.sh                    ← STAGE 2 ENTRY POINT - one command, steps 1-6
 ├── scripts/
 │   ├── barcode_merge_nanopore.sh          step 1 - merge per-barcode chunks
 │   ├── count_dcs_spikein.sh               step 2 - DCS spike-in count + scale factor

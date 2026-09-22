@@ -1,0 +1,59 @@
+target	direction	locus_sequence_5to3	handle_5to3	status	note
+chr17	forward	TCGTTCGAAACGGGTATATC	CCATGCCGTCGAAACAAGTT	worked	used in the protocol
+chr17	reverse	AAGGAATGTTCAGCTCTGTG	CCATGCCGTCGAAACAAGTT	worked	used in the protocol
+chr2	forward	AACAGTCCCTTTCATAGAGC	CCATGCCGTCGAAACAAGTT	worked	used in the protocol
+chr2	reverse	AAGCTAGACAAATATCCACT	CCATGCCGTCGAAACAAGTT	worked	used in the protocol
+GUSB	forward	CTGTCACCAAGAGCCAGTTCCT	ACTTACCGTCGAATTTACCT	worked	reference gene; separate handle
+GUSB	reverse	GGTTGAAGTCCTTCACCAGCAG	ACTTACCGTCGAATTTACCT	worked	reference gene; separate handle
+chr1	forward	TGTGTTGTGTGTATTCAACT	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr1	reverse	TTCTACCATTGACCTCAAAG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr2	forward_alt	TGGACATTTGGAGCGCTCTC	CCATGCCGTCGAAACAAGTT	proposed	alternative pair
+chr2	reverse_alt	GCTCTATGAAAGGGACTGTT	CCATGCCGTCGAAACAAGTT	proposed	alternative pair
+chr3	forward	TTCCAATCTGCTCCGCCTAA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr3	reverse	CTCAGAAACTACTTTGGTAC	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr4	forward	CTTTCTGCACTACCTGGAAG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr4	reverse	CCACCTGCAGATTCTACAAA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr5	forward	TGTGTTGTGTGTGTTCAACT	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr5	reverse	TACAAGTCTGCTCTGTGTAA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr6	forward	TTCCTCTTGATAGAGCAGTT	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr6	reverse	TGTGTGTGGAATGCAGCCAT	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr7	forward	TGGATATATGGACCGCATTG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr7	reverse	CTTGCAGACATAACAAGCAG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr8	forward	GCTCTCAGAGTTGAACATTC	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr8	forward_alt	CCAGCTCTCAGAGTTGAACA	CCATGCCGTCGAAACAAGTT	proposed	alternative pair
+chr8	reverse	AACCTGCTCTATGAAACGGA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr8	reverse_alt	TTGATTGCAAACATCACGAA	CCATGCCGTCGAAACAAGTT	proposed	alternative pair
+chr9	forward	AACACTTCCCTTCATACAGC	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr9	reverse	ACGAAACCTTCAAAGCTATC	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr10	forward	GACTTCATTGAGGCCTTCGT	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr10	reverse	GCTTCCAACGAAGTCCTCAA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr11	forward	CTGTGAAGATTTCGTTGGAA	CCATGCCGTCGAAACAAGTT	proposed	same sequence as chr22 reverse; do not multiplex chr11 with chr22
+chr11	reverse	TTCAGAGCTGCTCTGTCAAG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr12	forward	CACCTCTGTGAGTTGAATAG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr12	reverse	TGTGCAGTTTCCAGTTGGAG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr13	forward	TATCCACTTACAGTTTCTAC	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr13	reverse	TGTGTACTCAGCTAACAGAG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr14	forward	ACTTGAATGCACATATCACA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr14	reverse	ATATGGAAGTGGATGTTTCG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr15	forward	ACGAAATCCTCAGAACTATC	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr15	reverse	CTTTGTGATGTGTGTACTCA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr16	forward	TGGATATCTTGGCCTCTTAG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr16	reverse	CTGGCAGGCTTCACAAACAG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr18	forward	ACAGAGTAGAACATTCCCTT	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr18	reverse	CAAGGCTAGGCAAATATCCT	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr19	forward	GACATCCTTGAGGCTTTCGT	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr19	reverse	CTAGTTTCTATAGGAAGATA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr20	forward	GGCAGCTTTGAGGATTTCGT	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr20	reverse	CCCAGCTAGCCAAATATCCA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr21	forward	GTTCATCTCTATGAGTTGAA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr21	reverse	ACCTTTCTATTGATAGAGCA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr22	forward	CAAACCGTCCGAAACGTCCA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chr22	reverse	CTGTGAAGATTTCGTTGGAA	CCATGCCGTCGAAACAAGTT	proposed	same sequence as chr11 forward; do not multiplex chr11 with chr22
+chrX	forward	CCATCATAACGAATGTTCAG	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+chrX	reverse	CTCTTTCTGTGGGATCCGCA	CCATGCCGTCGAAACAAGTT	proposed	validate before use
+Pan-HOR	forward	TGTGTTGTGTGTATTCAACT	CCATGCCGTCGAAACAAGTT	proposed	pan-array readout; coincides with chr1 forward
+Pan-HOR	reverse	CCACCTGCAGATTCTACAAA	CCATGCCGTCGAAACAAGTT	proposed	pan-array readout; coincides with chr4 reverse
+ACTB	forward	CACCATTGGCAATGAGCGGTTC	ACTTACCGTCGAATTTACCT	proposed	reference gene; separate handle
+ACTB	reverse	GAAGCATTTGCGGTGGACGATG	ACTTACCGTCGAATTTACCT	proposed	reference gene; separate handle
+GAPDH	forward	GTCTCCTCTGACTTCAACAGCG	ACTTACCGTCGAATTTACCT	proposed	varied between replicates in our hands; not used for normalisation
+GAPDH	reverse	CTTGGAGGCCATGTGGGCCAT	ACTTACCGTCGAATTTACCT	proposed	varied between replicates in our hands; not used for normalisation
